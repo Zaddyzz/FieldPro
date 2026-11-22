@@ -427,3 +427,33 @@ a.metric:hover .metric-label { text-decoration: underline; }
   .auth-main { place-items: start center; padding-top: 28px; }
   .person-actions { flex-direction: column; align-items: flex-end; gap: 6px; }
 }
+
+/* Quick setup */
+.setup-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+.setup-head p { margin: 6px 0 0; max-width: 520px; }
+.stepper { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stepper button { width: 100%; display: flex; align-items: center; gap: 10px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 14px 6px 6px; font: inherit; color: var(--ink-3); cursor: default; text-align: left; }
+.stepper li.is-done button { cursor: pointer; color: var(--ink-2); }
+.stepper li.is-done button:hover { border-color: #bdbdbd; }
+.stepper li.is-on button { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.step-dot { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--rule-2); color: var(--ink-3); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.is-on .step-dot { background: var(--ink); color: #fff; }
+.is-done .step-dot { background: var(--ink); color: #fff; }
+.step-name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setup-card { padding: 28px; }
+.setup-title { font-size: 22px; }
+.setup-card .muted { margin: 6px 0 0; }
+.setup-actions { padding-top: 10px; border-top: 1px solid var(--rule-2); margin-top: 4px; }
+.invite-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 8px; }
+.invited { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.invited li { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--ink-2); background: var(--paper); border-radius: var(--r-sm); padding: 10px 12px; }
+@media (max-width: 760px) {
+  .setup-head { flex-direction: column; gap: 8px; }
+  .stepper { grid-template-columns: repeat(4, auto); justify-content: start; }
+  .stepper button { padding: 4px; gap: 0; }
+  .stepper li.is-on button { padding-right: 12px; gap: 8px; }
+  .stepper li:not(.is-on) .step-name { display: none; }
+  .setup-card { padding: 20px; }
+  .invite-row { grid-template-columns: minmax(0, 1fr) 130px; }
+  .invite-row .btn { grid-column: 1 / -1; }
+}

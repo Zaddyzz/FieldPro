@@ -4,14 +4,14 @@ import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
 import { allTimeZones, COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
 import { t } from '../lib/i18n';
-import { Button, ErrorBox, Field, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
+import { Button, ErrorBox, Field, LinkButton, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
 
 export default function Settings() {
   const { business, settings, isAdmin, profile, role, refresh } = useBusiness();
   const toast = useToast();
   return (
     <div className="page page-narrow">
-      <PageHeader title={t('settings.title')} />
+      <PageHeader title={t('settings.title')} actions={isAdmin ? <LinkButton to="/setup" variant="secondary">{t('setup.open')}</LinkButton> : undefined} />
       {isAdmin ? <BusinessSettings key={business.id + (settings?.job_prefix ?? '')} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
         : <Notice>{t('settings.ownerOnly')}</Notice>}
       <ProfileSettings key={profile?.id} country={business.country} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />

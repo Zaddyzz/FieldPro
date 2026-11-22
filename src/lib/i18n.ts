@@ -94,6 +94,16 @@ const en = {
   'tech.today': 'Today', 'tech.upcoming': 'Upcoming', 'tech.overdue': 'Overdue', 'tech.done': 'Recently completed',
   'tech.empty': 'No jobs assigned to you right now.', 'tech.start': 'Start job', 'tech.parts': 'Awaiting parts', 'tech.resume': 'Resume',
 
+  'setup.title': 'Quick setup', 'setup.sub': 'Four short steps. You can change any of this later in Settings.',
+  'setup.step': 'Step {n} of {total}', 'setup.next': 'Save and continue', 'setup.back': 'Back', 'setup.skip': 'Skip for now',
+  'setup.finish': 'Finish setup', 'setup.skipAll': 'Set up later',
+  'setup.s1': 'Your business', 'setup.s1Sub': 'This shows on job records and, later, on quotes and invoices.',
+  'setup.s2': 'Region and tax', 'setup.s2Sub': 'Prices use this currency. Appointment times use this time zone for everyone on your team.',
+  'setup.s3': 'Jobs', 'setup.s3Sub': 'Every job gets a number. Pick the prefix you want customers to see.',
+  'setup.s4': 'Your team', 'setup.s4Sub': 'Invite the people who will take jobs. Each gets a link to join.',
+  'setup.inviteAdd': 'Add invite', 'setup.invited': 'Invite created for {email}. Share its link from the Team page.',
+  'setup.noInvites': 'No invites yet. You can also do this later from Team.',
+  'setup.done': 'Setup complete', 'setup.open': 'Run quick setup again', 'setup.example': 'Your first job will be {ref}',
   'error.generic': 'Something went wrong.', 'error.notConfigured': 'FieldPro is not connected to its database yet.',
   'error.forbidden': 'You do not have access to this page.',
 } as const;

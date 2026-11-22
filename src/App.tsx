@@ -16,6 +16,7 @@ import { CustomerDetail, CustomerForm, CustomerList } from './pages/Customers';
 import Team from './pages/Team';
 import Settings from './pages/Settings';
 import MyJobs from './pages/tech/MyJobs';
+import Setup from './pages/Setup';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { ready, session, memberships, signOut } = useSession();
@@ -40,7 +41,8 @@ function ManagerOnly({ children, adminOnly }: { children: JSX.Element; adminOnly
 }
 
 function Home() {
-  const { isManager } = useSession();
+  const { isManager, isAdmin, settings } = useSession();
+  if (isAdmin && settings && !settings.setup_completed_at) return <Navigate to="/setup" replace />;
   return isManager ? <Dashboard /> : <MyJobs />;
 }
 
@@ -72,6 +74,7 @@ export default function App() {
         <Route path="customers/:id/edit" element={<ManagerOnly><CustomerForm /></ManagerOnly>} />
         <Route path="team" element={<ManagerOnly adminOnly><Team /></ManagerOnly>} />
         <Route path="settings" element={<Settings />} />
+        <Route path="setup" element={<ManagerOnly adminOnly><Setup /></ManagerOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
