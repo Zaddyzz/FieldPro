@@ -457,3 +457,5 @@ a.metric:hover .metric-label { text-decoration: underline; }
   .invite-row { grid-template-columns: minmax(0, 1fr) 130px; }
   .invite-row .btn { grid-column: 1 / -1; }
 }
+.tz-search { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.tz-search input[aria-invalid=true] { border-color: var(--fault); }

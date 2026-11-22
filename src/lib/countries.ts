@@ -69,6 +69,35 @@ export function allTimeZones(): string[] {
   return intl.supportedValuesOf ? intl.supportedValuesOf('timeZone') : Array.from(new Set(COUNTRIES.map((c) => c.timeZone)));
 }
 
+// Countries that span several time zones. Everyone else uses their single default zone.
+const MULTI_ZONE: Record<string, string[]> = {
+  US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'],
+  CA: ['America/St_Johns', 'America/Halifax', 'America/Toronto', 'America/Winnipeg', 'America/Regina', 'America/Edmonton', 'America/Vancouver'],
+  MX: ['America/Mexico_City', 'America/Cancun', 'America/Chihuahua', 'America/Tijuana'],
+  BR: ['America/Sao_Paulo', 'America/Fortaleza', 'America/Recife', 'America/Belem', 'America/Manaus', 'America/Rio_Branco'],
+  AU: ['Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Adelaide', 'Australia/Darwin', 'Australia/Perth', 'Australia/Hobart'],
+  ID: ['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'],
+  CL: ['America/Santiago', 'America/Punta_Arenas'],
+  CD: ['Africa/Kinshasa', 'Africa/Lubumbashi'],
+  NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+  ES: ['Europe/Madrid', 'Atlantic/Canary'],
+  PT: ['Europe/Lisbon', 'Atlantic/Azores'],
+};
+
+export function zonesForCountry(code: string): string[] {
+  return MULTI_ZONE[code] ?? [countryByCode(code)?.timeZone ?? 'UTC'];
+}
+
+/** "Lagos (UTC+1)" */
+export function zoneLabel(zone: string): string {
+  const city = zone.split('/').pop()!.replace(/_/g, ' ');
+  try {
+    const off = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value ?? '';
+    return `${city} (${off.replace('GMT', 'UTC') || 'UTC'})`;
+  } catch { return city; }
+}
+
 export const CURRENCIES = Array.from(new Set(COUNTRIES.map((c) => c.currency))).sort();
 
 /** Normalise user input to E.164 using the selected dial code. Returns null if invalid. */

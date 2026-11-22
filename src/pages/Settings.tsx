@@ -2,8 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
-import { allTimeZones, COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
+import { COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
 import { t } from '../lib/i18n';
+import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { Button, ErrorBox, Field, LinkButton, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
 
 export default function Settings() {
@@ -31,7 +32,6 @@ function BusinessSettings({ onSaved }: { onSaved: () => void }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const zones = allTimeZones();
   const currencies = Array.from(new Set([...CURRENCIES, f.currency])).sort();
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
@@ -61,13 +61,13 @@ function BusinessSettings({ onSaved }: { onSaved: () => void }) {
       <h2 className="card-title">{t('settings.regional')}</h2>
       <div className="grid-2">
         <Field label={t('auth.country')}>
-          <select value={f.country} onChange={set('country')}>{COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}</select>
+          <select value={f.country} onChange={(e) => { const c = countryByCode(e.target.value); setF((x) => ({ ...x, country: e.target.value, ...(c ? { time_zone: c.timeZone } : {}) })); }}>{COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}</select>
         </Field>
         <Field label={t('settings.currency')}>
           <select value={f.currency} onChange={set('currency')}>{currencies.map((c) => <option key={c}>{c}</option>)}</select>
         </Field>
         <Field label={t('settings.timeZone')}>
-          <select value={f.time_zone} onChange={set('time_zone')}>{zones.map((z) => <option key={z}>{z}</option>)}</select>
+          <TimeZoneSelect key={f.country} country={f.country} value={f.time_zone} onChange={(z) => setF((x) => ({ ...x, time_zone: z }))} />
         </Field>
         <Field label={t('settings.dateFormat')}>
           <select value={f.date_format} onChange={set('date_format')}>

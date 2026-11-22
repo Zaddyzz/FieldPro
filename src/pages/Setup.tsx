@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
-import { allTimeZones, COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
+import { COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
 import { t, type MessageKey } from '../lib/i18n';
 import type { Role } from '../lib/types';
+import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { Button, ErrorBox, Field, Notice, PhoneInput } from '../components/ui';
 
 const STEPS = ['setup.s1', 'setup.s2', 'setup.s3', 'setup.s4'] as const;
@@ -72,7 +73,6 @@ export default function Setup() {
     setInvite((x) => ({ ...x, email: '' }));
   };
 
-  const zones = allTimeZones();
   const currencies = Array.from(new Set([...CURRENCIES, f.currency])).sort();
 
   return (
@@ -133,7 +133,7 @@ export default function Setup() {
                 <select value={f.currency} onChange={set('currency')}>{currencies.map((c) => <option key={c}>{c}</option>)}</select>
               </Field>
               <Field label={t('settings.timeZone')}>
-                <select value={f.time_zone} onChange={set('time_zone')}>{zones.map((z) => <option key={z}>{z}</option>)}</select>
+                <TimeZoneSelect key={f.country} country={f.country} value={f.time_zone} onChange={(z) => setF((x) => ({ ...x, time_zone: z }))} />
               </Field>
               <Field label={t('settings.dateFormat')}>
                 <select value={f.date_format} onChange={set('date_format')}>
