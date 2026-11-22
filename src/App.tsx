@@ -21,6 +21,13 @@ import { EquipmentDetail, EquipmentForm, EquipmentList } from './pages/Equipment
 import { ContractDetail, ContractForm, ContractList } from './pages/Maintenance';
 import { DocEditor, DocList, DocView, PaymentList } from './pages/Docs';
 import { Portal, PortalDocument } from './pages/portal/Portal';
+import Reports from './pages/Reports';
+import Admin from './pages/Admin';
+
+function PlatformAdminOnly({ children }: { children: JSX.Element }) {
+  const { isPlatformAdmin } = useSession();
+  return isPlatformAdmin ? children : <ErrorBox message={t('error.forbidden')} />;
+}
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { ready, session, memberships, signOut } = useSession();
@@ -96,6 +103,8 @@ export default function App() {
         <Route path="invoices/new" element={<ManagerOnly><DocEditor kind="invoice" key="in" /></ManagerOnly>} />
         <Route path="invoices/:id" element={<ManagerOnly><DocView kind="invoice" key="iv" /></ManagerOnly>} />
         <Route path="invoices/:id/edit" element={<ManagerOnly><DocEditor kind="invoice" key="ie" /></ManagerOnly>} />
+        <Route path="reports" element={<ManagerOnly><Reports /></ManagerOnly>} />
+        <Route path="admin" element={<PlatformAdminOnly><Admin /></PlatformAdminOnly>} />
         <Route path="payments" element={<ManagerOnly><PaymentList /></ManagerOnly>} />
         <Route path="portal/quote/:id" element={<PortalDocument kind="quote" key="pq" />} />
         <Route path="portal/invoice/:id" element={<PortalDocument kind="invoice" key="pi" />} />

@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Banknote, Briefcase, CalendarDays, ChevronDown, Cpu, FileText, Home, LayoutGrid, LogOut, Menu, Moon, Receipt, RefreshCcw, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
+import { BarChart3, Banknote, Briefcase, ShieldCheck, CalendarDays, ChevronDown, Cpu, FileText, Home, LayoutGrid, LogOut, Menu, Moon, Receipt, RefreshCcw, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { LogoFull, LogoMark } from './Logo';
 import { useBusiness } from '../lib/session';
 import { t, type MessageKey } from '../lib/i18n';
 import { Avatar } from './ui';
+import { NotificationBell } from './Notifications';
+import { PlanBanner } from './Plan';
 
 interface NavItem { to: string; label: MessageKey; icon: typeof LayoutGrid; end?: boolean }
 
 export function Layout() {
-  const { business, role, memberships, switchBusiness, signOut, profile, isManager, isAdmin } = useBusiness();
+  const { business, role, memberships, switchBusiness, signOut, profile, isManager, isAdmin, isPlatformAdmin } = useBusiness();
   const isCustomer = role === 'customer';
   const [moreOpen, setMoreOpen] = useState(false);
   const [switcher, setSwitcher] = useState(false);
@@ -27,6 +29,7 @@ export function Layout() {
         { to: '/schedule', label: 'nav.schedule', icon: CalendarDays },
         { to: '/quotes', label: 'nav.quotes', icon: FileText },
         { to: '/payments', label: 'nav.payments', icon: Banknote },
+        { to: '/reports', label: 'nav.reports', icon: BarChart3 },
         { to: '/equipment', label: 'nav.equipment', icon: Cpu },
         { to: '/maintenance', label: 'nav.maintenance', icon: RefreshCcw },
         ...(isAdmin ? [{ to: '/team', label: 'nav.team' as MessageKey, icon: Users }] : []),
@@ -41,6 +44,7 @@ export function Layout() {
         { to: '/settings', label: 'nav.settings', icon: Settings },
       ];
 
+  if (isPlatformAdmin) items.push({ to: '/admin', label: 'nav.admin', icon: ShieldCheck });
   const primary = items.slice(0, 4);
   const overflow = items.slice(4);
 
@@ -49,7 +53,7 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="side-logo"><LogoFull width={196} /></div>
+        <div className="side-logo"><LogoFull width={isCustomer ? 196 : 168} />{!isCustomer && <NotificationBell businessId={business.id} tone="chrome" />}</div>
         <div className="biz-block">
           <button className="biz-switch" onClick={() => memberships.length > 1 && setSwitcher((v) => !v)} aria-expanded={switcher}>
             <span className="biz-name">{business.name}</span>
@@ -85,6 +89,7 @@ export function Layout() {
         <button className="topbar-biz" onClick={() => memberships.length > 1 && setSwitcher((v) => !v)}>
           {business.name}{memberships.length > 1 && <ChevronDown size={14} />}
         </button>
+        {!isCustomer && <NotificationBell businessId={business.id} />}
         <button className="icon-btn" onClick={theme.toggle} aria-label={t('theme.toggle')}><ThemeIcon size={18} /></button>
         {switcher && (
           <ul className="biz-menu biz-menu-mobile">
@@ -96,7 +101,7 @@ export function Layout() {
         )}
       </div>
 
-      <main className="main"><Outlet /></main>
+      <main className="main"><PlanBanner /><Outlet /></main>
 
       <nav className="bottom-nav">
         {primary.map((i) => (

@@ -6,6 +6,7 @@ import { COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
 import { t } from '../lib/i18n';
 import { useTheme, type ThemeChoice } from '../lib/theme';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
+import { PlanCard } from '../components/Plan';
 import { Button, ErrorBox, Field, LinkButton, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
 
 export default function Settings() {
@@ -14,6 +15,7 @@ export default function Settings() {
   return (
     <div className="page page-narrow">
       <PageHeader title={t('settings.title')} actions={isAdmin ? <LinkButton to="/setup" variant="secondary">{t('setup.open')}</LinkButton> : undefined} />
+      {isAdmin && <PlanCard />}
       {isAdmin ? <BusinessSettings key={business.id + (settings?.job_prefix ?? '')} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
         : <Notice>{t('settings.ownerOnly')}</Notice>}
       <ProfileSettings key={profile?.id} country={business.country} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />

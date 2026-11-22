@@ -5,6 +5,14 @@ import type { Business, Membership, Role } from './types';
 
 interface Settings { job_prefix: string; whatsapp_enabled: boolean; tax_inclusive: boolean; setup_completed_at: string | null; default_tax_rate: number }
 interface Subscription { plan: string; status: string; trial_ends_at: string | null }
+export interface Usage {
+  plan: string; plan_name: string; status: string; trial_ends_at: string | null; current_period_end: string | null;
+  writable: boolean; blocked_reason: 'trial_ended' | 'suspended' | 'cancelled' | null;
+  max_staff: number | null; max_jobs_month: number | null; max_customers: number | null;
+  staff: number; customers: number; jobs_this_month: number;
+  support: { email: string | null; whatsapp: string | null; note: string | null };
+  plans: { code: string; name: string; max_staff: number | null; max_jobs_month: number | null; max_customers: number | null; prices: Record<string, number> }[];
+}
 interface Profile { id: string; full_name: string; phone: string | null; email: string | null }
 
 interface Ctx {
@@ -17,6 +25,9 @@ interface Ctx {
   role: Role | null;
   settings: Settings | null;
   subscription: Subscription | null;
+  usage: Usage | null;
+  isPlatformAdmin: boolean;
+  refreshUsage: () => Promise<void>;
   isManager: boolean;
   isAdmin: boolean;
   switchBusiness: (id: string) => void;
@@ -38,14 +49,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [currentId, setCurrentId] = useState<string | null>(readStore());
   const [settings, setSettings] = useState<Settings | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [isPlatformAdmin, setPlatformAdmin] = useState(false);
 
   const load = useCallback(async (s: Session | null) => {
-    if (!s) { setProfile(null); setMemberships([]); setReady(true); return; }
-    const [p, m] = await Promise.all([
+    if (!s) { setProfile(null); setMemberships([]); setPlatformAdmin(false); setReady(true); return; }
+    const [p, m, pa] = await Promise.all([
       supabase.from('profiles').select('id, full_name, phone, email').eq('id', s.user.id).maybeSingle(),
       supabase.from('business_members').select('id, business_id, role, status, business:businesses(*)')
         .eq('user_id', s.user.id).eq('status', 'active'),
+      supabase.rpc('is_platform_admin'),
     ]);
+    setPlatformAdmin(pa.data === true);
     setProfile((p.data as Profile) ?? null);
     const list = ((m.data ?? []) as unknown as Membership[]).filter((x) => x.business);
     setMemberships(list);
@@ -66,6 +81,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [memberships, currentId],
   );
 
+  const loadUsage = useCallback(async () => {
+    if (!current || current.role === 'customer') { setUsage(null); return; }
+    const { data } = await supabase.rpc('business_usage', { p_business: current.business_id });
+    setUsage((data as Usage) ?? null);
+  }, [current]);
+  useEffect(() => { loadUsage(); }, [loadUsage]);
+
   useEffect(() => {
     if (!current) { setSettings(null); setSubscription(null); return; }
     let live = true;
@@ -84,7 +106,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     ready, session, profile, memberships, current,
     business: current?.business ?? null,
     role: current?.role ?? null,
-    settings, subscription,
+    settings, subscription, usage, isPlatformAdmin, refreshUsage: loadUsage,
     isManager: !!current && ['owner', 'admin', 'dispatcher'].includes(current.role),
     isAdmin: !!current && ['owner', 'admin'].includes(current.role),
     switchBusiness: (id) => { writeStore(id); setCurrentId(id); },
