@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { t } from '../../lib/i18n';
-import { Logo } from '../../components/Logo';
+import { Logo, LogoFull } from '../../components/Logo';
 
 export function AuthFrame({ title, sub, children, footer }: { title: string; sub?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="auth">
       <section className="auth-side" aria-hidden>
-        <Logo size={34} />
+        <LogoFull width={240} />
         <p className="auth-tagline">Control with confidence.</p>
         <div className="ticket">
           <div className="ticket-head"><span className="ref">JOB-0142</span><span className="badge st-in_progress">In progress</span></div>

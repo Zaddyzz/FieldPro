@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Briefcase, CalendarDays, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
 import { useTheme } from '../lib/theme';
-import { Logo, LogoMark } from './Logo';
+import { LogoFull, LogoMark } from './Logo';
 import { useBusiness } from '../lib/session';
 import { t, type MessageKey } from '../lib/i18n';
 import { Avatar } from './ui';
@@ -39,7 +39,7 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Logo size={30} tagline />
+        <div className="side-logo"><LogoFull width={196} /></div>
         <div className="biz-block">
           <button className="biz-switch" onClick={() => memberships.length > 1 && setSwitcher((v) => !v)} aria-expanded={switcher}>
             <span className="biz-name">{business.name}</span>
