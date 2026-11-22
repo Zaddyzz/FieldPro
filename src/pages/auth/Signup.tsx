@@ -104,7 +104,7 @@ export default function Signup() {
           <input type="password" value={form.password} onChange={(e) => set('password')(e.target.value)} autoComplete="new-password" required />
         </Field>
         {!personal && (
-          <p className="fine">Currency {countryByCode(country)?.currency} · {countryByCode(country)?.timeZone} — you can change these later in Settings.</p>
+          <p className="fine">Prices in {countryByCode(country)?.currency}, times in {countryByCode(country)?.timeZone}. You can change both in Settings.</p>
         )}
         <Button type="submit" busy={busy} block>{busy ? t('auth.creating') : t('auth.create')}</Button>
       </form>

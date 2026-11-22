@@ -8,7 +8,7 @@ import { dayKey, formatDateTime, formatTime, formatWeekday, utcToZonedLocal, zon
 import { t, type MessageKey } from '../lib/i18n';
 import type { Category, Customer, Job, JobStatus, Member, Priority } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PriorityTag, Spinner, StatusBadge } from '../components/ui';
+import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PriorityTag, RefTag, Spinner, StatusBadge } from '../components/ui';
 
 export const STATUSES: JobStatus[] = ['new', 'scheduled', 'assigned', 'in_progress', 'awaiting_parts', 'completed', 'cancelled'];
 const PRIORITIES: Priority[] = ['low', 'normal', 'high', 'urgent'];
@@ -90,7 +90,7 @@ export function JobList() {
               <tbody>
                 {rows.map((j) => (
                   <tr key={j.id}>
-                    <td><Link to={`/jobs/${j.id}`} className="cell-link"><strong>{j.title}</strong><small>{j.reference}<span className="show-sm"> · {j.customer?.name}</span></small></Link></td>
+                    <td><Link to={`/jobs/${j.id}`} className="cell-link"><RefTag value={j.reference} /><strong>{j.title}</strong><small className="show-sm">{j.customer?.name}</small></Link></td>
                     <td className="hide-sm">{j.customer?.name}</td>
                     <td className="num">{j.scheduled_at ? formatDateTime(j.scheduled_at, tz, business.date_format) : '—'}</td>
                     <td className="hide-sm">{j.job_assignments?.length ? j.job_assignments.map((a) => memberName(byUser.get(a.user_id))).join(', ') : <span className="muted">{t('jobs.unassigned')}</span>}</td>
@@ -253,7 +253,7 @@ function JobFormInner({ data, presetCustomer, onDone }: {
   const techs = techOptions(data.members);
   return (
     <div className="page page-narrow">
-      <PageHeader title={j ? `${j.reference} · ${j.title}` : t('jobs.new')} back={j ? `/jobs/${j.id}` : '/jobs'} />
+      <PageHeader title={j ? j.title : t('jobs.new')} sub={j ? <RefTag value={j.reference} /> : undefined} back={j ? `/jobs/${j.id}` : '/jobs'} />
       <form className="card stack" onSubmit={submit} noValidate>
         {error && <ErrorBox message={error} />}
         {data.customers.length === 0 && !j ? (

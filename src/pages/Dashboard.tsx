@@ -6,9 +6,9 @@ import { dayKey, formatDate, formatTime, relativeFromNow, zonedLocalToUtc } from
 import { t, type MessageKey } from '../lib/i18n';
 import type { Activity, Job } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { ErrorBox, PageHeader, PriorityTag, Spinner, StatusBadge } from '../components/ui';
+import { ErrorBox, PageHeader, PriorityTag, RefTag, Spinner, StatusBadge } from '../components/ui';
 
-const OPEN = ['new', 'scheduled', 'assigned', 'in_progress', 'awaiting_parts'];
+const OPEN = ['new', 'scheduled', 'assigned', 'in_progress', 'awaiting_parts'] as const;
 
 export default function Dashboard() {
   const { business, subscription } = useBusiness();
@@ -23,20 +23,22 @@ export default function Dashboard() {
     const count = (q: PromiseLike<{ count: number | null; error: { message: string } | null }>) =>
       Promise.resolve(q).then((r) => { if (r.error) throw new Error(r.error.message); return r.count ?? 0; });
 
-    const [customers, techs, open, inProgress, completed, overdue, todayJobs, activity, members] = await Promise.all([
+    const [customers, techs, openRows, completed, overdue, todayJobs, activity, members] = await Promise.all([
       count(supabase.from('customers').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('status', 'active')),
       count(supabase.from('business_members').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('role', 'technician').eq('status', 'active')),
-      count(supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('archived', false).in('status', OPEN)),
-      count(supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('archived', false).eq('status', 'in_progress')),
+      supabase.from('jobs').select('status').eq('business_id', b).eq('archived', false).in('status', [...OPEN]).limit(5000).then(must),
       count(supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('status', 'completed').gte('completed_at', monthStart)),
-      count(supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('archived', false).in('status', OPEN).lt('scheduled_at', new Date().toISOString())),
+      count(supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('archived', false).in('status', [...OPEN]).lt('scheduled_at', new Date().toISOString())),
       supabase.from('jobs').select('*, customer:customers(id, name, phone, address_line1, city), job_assignments(user_id)')
         .eq('business_id', b).eq('archived', false).gte('scheduled_at', startToday).lt('scheduled_at', endToday).order('scheduled_at').then(must),
       supabase.from('job_activities').select('id, kind, from_value, to_value, note, created_at, actor_id, job:jobs(id, reference, title)')
         .eq('business_id', b).order('created_at', { ascending: false }).limit(12).then(must),
       loadMembers(b),
     ]);
-    return { customers, techs, open, inProgress, completed, overdue, todayJobs: todayJobs as Job[],
+    const lanes = Object.fromEntries(OPEN.map((st) => [st, 0])) as Record<(typeof OPEN)[number], number>;
+    for (const r of openRows as { status: (typeof OPEN)[number] }[]) lanes[r.status]++;
+    const open = (openRows as unknown[]).length;
+    return { customers, techs, open, lanes, completed, overdue, todayJobs: todayJobs as Job[],
              activity: activity as unknown as (Activity & { job: { id: string; reference: string; title: string } | null })[], members };
   }, [business.id, tz]);
 
@@ -64,9 +66,27 @@ export default function Dashboard() {
         </section>
       )}
 
-      <section className="metrics">
-        <Metric label={t('dash.openJobs')} value={data.open} to="/jobs" />
-        <Metric label={t('dash.inProgress')} value={data.inProgress} to="/jobs?status=in_progress" />
+      <section className="board" aria-label={t('dash.openJobs')}>
+        <div className="board-head">
+          <span className="board-total"><strong>{data.open.toLocaleString()}</strong>{t('dash.openJobs').toLowerCase()}</span>
+          <Link to="/schedule" className="small-link">{t('nav.schedule')}</Link>
+        </div>
+        <div className="lane-bar" aria-hidden>
+          {data.open > 0 && OPEN.filter((st) => data.lanes[st] > 0).map((st) => (
+            <span key={st} className={`fill-${st}`} style={{ flexGrow: data.lanes[st] }} />
+          ))}
+        </div>
+        <div className="lanes">
+          {OPEN.map((st) => (
+            <Link key={st} to={`/jobs?status=${st}`} className="lane">
+              <span className="lane-count">{data.lanes[st]}</span>
+              <span className="lane-name"><i className={`fill-${st}`} />{t(`status.${st}` as MessageKey)}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="figures">
         <Metric label={t('dash.overdue')} value={data.overdue} to="/jobs?status=overdue" tone={data.overdue ? 'warn' : undefined} />
         <Metric label={t('dash.completedMonth')} value={data.completed} />
         <Metric label={t('dash.customers')} value={data.customers} to="/customers" />
@@ -82,8 +102,8 @@ export default function Dashboard() {
                 <li key={j.id}>
                   <Link to={`/jobs/${j.id}`} className="row-link">
                     <span className="row-time">{formatTime(j.scheduled_at, tz, business.date_format)}</span>
-                    <span className="row-main"><strong>{j.title}</strong><small>{j.reference} · {j.customer?.name}
-                      {j.job_assignments?.length ? ` · ${j.job_assignments.map((a) => memberName(byUser.get(a.user_id))).join(', ')}` : ''}</small></span>
+                    <span className="row-main"><strong>{j.title}</strong><span className="meta"><RefTag value={j.reference} /><span>{j.customer?.name}</span>
+                      {j.job_assignments?.length ? <span>{j.job_assignments.map((a) => memberName(byUser.get(a.user_id))).join(', ')}</span> : null}</span></span>
                     <PriorityTag priority={j.priority} />
                     <StatusBadge status={j.status} overdue={isOverdue(j)} />
                   </Link>
@@ -102,7 +122,7 @@ export default function Dashboard() {
                   <span className="feed-who">{memberName(byUser.get(a.actor_id ?? '')) || t('act.someone')}</span>{' '}
                   {t(`act.${a.kind}` as MessageKey)}
                   {a.kind === 'status' && a.to_value ? <> → <em>{t(`status.${a.to_value}` as MessageKey)}</em></> : null}
-                  {a.job && <> · <Link to={`/jobs/${a.job.id}`}>{a.job.reference}</Link></>}
+                  {a.job && <> on <Link to={`/jobs/${a.job.id}`}>{a.job.reference}</Link></>}
                   <time>{relativeFromNow(a.created_at)}</time>
                 </li>
               ))}

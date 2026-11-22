@@ -9,7 +9,7 @@ import { formatDateTime, relativeFromNow } from '../lib/format';
 import { t, type MessageKey } from '../lib/i18n';
 import type { Activity, Job, JobStatus } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { Button, ErrorBox, Field, LinkButton, PageHeader, PriorityTag, Spinner, StatusBadge, useToast } from '../components/ui';
+import { Button, ErrorBox, Field, LinkButton, PageHeader, PriorityTag, RefTag, Spinner, StatusBadge, useToast } from '../components/ui';
 import { STATUSES } from './Jobs';
 
 interface Material { id: string; item: string; quantity: number; added_by: string | null; created_at: string }
@@ -69,7 +69,7 @@ export default function JobDetail() {
   return (
     <div className="page">
       <PageHeader back={isManager ? '/jobs' : '/'} title={job.title}
-        sub={<>{job.reference} · {t(`category.${job.category}` as MessageKey)} <StatusBadge status={job.status} overdue={isOverdue(job)} /> <PriorityTag priority={job.priority} />
+        sub={<><RefTag value={job.reference} /> <span>{t(`category.${job.category}` as MessageKey)}</span> <StatusBadge status={job.status} overdue={isOverdue(job)} /> <PriorityTag priority={job.priority} />
           {job.archived && <span className="badge st-cancelled">{t('common.archived')}</span>}</>}
         actions={isManager ? <>
           <LinkButton to={`/jobs/${job.id}/edit`} variant="secondary">{t('common.edit')}</LinkButton>

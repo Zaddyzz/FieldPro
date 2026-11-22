@@ -78,6 +78,10 @@ export function StatusBadge({ status, overdue }: { status: JobStatus; overdue?: 
   );
 }
 
+export function RefTag({ value }: { value: string }) {
+  return <span className="ref">{value}</span>;
+}
+
 export function PriorityTag({ priority }: { priority: Priority }) {
   if (priority === 'normal') return null;
   return <span className={`prio prio-${priority}`}>{t(`priority.${priority}` as MessageKey)}</span>;

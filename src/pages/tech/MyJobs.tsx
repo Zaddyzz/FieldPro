@@ -7,7 +7,7 @@ import { dayKey, formatDateTime, formatTime } from '../../lib/format';
 import { t } from '../../lib/i18n';
 import type { Job } from '../../lib/types';
 import { isOverdue } from '../../lib/types';
-import { EmptyState, ErrorBox, PriorityTag, Spinner, StatusBadge } from '../../components/ui';
+import { EmptyState, ErrorBox, PriorityTag, RefTag, Spinner, StatusBadge } from '../../components/ui';
 
 export default function MyJobs() {
   const { business, profile } = useBusiness();
@@ -59,7 +59,7 @@ function Group({ title, jobs, tz, fmt, timeOnly, tone }: { title: string; jobs: 
                   <StatusBadge status={j.status} overdue={isOverdue(j)} />
                 </div>
                 <strong>{j.title}</strong>
-                <span className="muted">{j.reference} · {j.customer?.name}</span>
+                <span className="meta"><RefTag value={j.reference} /><span>{j.customer?.name}</span></span>
                 {j.address && <span className="muted small">{j.address}</span>}
                 <PriorityTag priority={j.priority} />
               </Link>

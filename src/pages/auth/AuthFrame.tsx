@@ -7,11 +7,19 @@ export function AuthFrame({ title, sub, children, footer }: { title: string; sub
       <section className="auth-side" aria-hidden>
         <div className="brand brand-light"><span className="brand-mark">F</span>{t('app.name')}</div>
         <p className="auth-tagline">{t('app.tagline')}</p>
-        <ul className="auth-points">
-          <li><span>01</span>Jobs, schedules and technicians in one place</li>
-          <li><span>02</span>Every customer's history, on every phone</li>
-          <li><span>03</span>Works in your currency, time zone and tax rules</li>
-        </ul>
+        <div className="ticket">
+          <div className="ticket-head"><span className="ref">JOB-0142</span><span className="badge st-in_progress">In progress</span></div>
+          <div className="ticket-body">
+            <span className="ticket-title">Install 5 kVA inverter and 8 panels</span>
+            <dl className="ticket-rows">
+              <dt>Customer</dt><dd>Okafor Residence, GRA</dd>
+              <dt>Technician</dt><dd>Daniel E.</dd>
+              <dt>Materials</dt><dd>6 mm cable × 24 m, 2 breakers</dd>
+            </dl>
+          </div>
+          <div className="ticket-foot"><span>Today, 10:30</span><strong>3 photos</strong></div>
+        </div>
+        <p className="auth-note">Every job, customer and technician in one place, in your currency and time zone.</p>
       </section>
       <section className="auth-main">
         <div className="auth-card">

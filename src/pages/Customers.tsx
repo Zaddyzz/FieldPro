@@ -9,7 +9,7 @@ import { formatDateTime } from '../lib/format';
 import { t } from '../lib/i18n';
 import type { Customer, Job } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PhoneInput, Spinner, StatusBadge, useToast } from '../components/ui';
+import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PhoneInput, RefTag, Spinner, StatusBadge, useToast } from '../components/ui';
 
 export function CustomerList() {
   const { business } = useBusiness();
@@ -204,7 +204,7 @@ export function CustomerDetail() {
             <ul className="rows">
               {data.jobs.map((j) => (
                 <li key={j.id}><Link to={`/jobs/${j.id}`} className="row-link">
-                  <span className="row-main"><strong>{j.title}</strong><small>{j.reference} · {formatDateTime(j.scheduled_at ?? j.created_at, business.time_zone, business.date_format)}</small></span>
+                  <span className="row-main"><strong>{j.title}</strong><span className="meta"><RefTag value={j.reference} /><span>{formatDateTime(j.scheduled_at ?? j.created_at, business.time_zone, business.date_format)}</span></span></span>
                   <StatusBadge status={j.status} overdue={isOverdue(j)} />
                 </Link></li>
               ))}

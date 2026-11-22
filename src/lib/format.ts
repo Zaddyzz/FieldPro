@@ -58,7 +58,7 @@ export function formatTime(iso: string | null | undefined, timeZone: string, fmt
 
 export function formatDateTime(iso: string | null | undefined, timeZone: string, fmt: DateFormat): string {
   if (!iso) return '—';
-  return `${formatDate(iso, timeZone, fmt)} · ${formatTime(iso, timeZone, fmt)}`;
+  return `${formatDate(iso, timeZone, fmt)}, ${formatTime(iso, timeZone, fmt)}`;
 }
 
 export function formatWeekday(key: string): string {
