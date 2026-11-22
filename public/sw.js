@@ -1,6 +1,6 @@
-// Minimal service worker: makes FieldPro installable and opens the app shell offline.
+// Minimal service worker: makes COVARO installable and opens the app shell offline.
 // Data always comes live from the server; nothing private is cached.
-const SHELL = 'fieldpro-shell-v1';
+const SHELL = 'covaro-shell-v1';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon-192.png'])));
   self.skipWaiting();

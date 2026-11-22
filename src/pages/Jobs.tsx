@@ -8,7 +8,7 @@ import { dayKey, formatDateTime, formatTime, formatWeekday, utcToZonedLocal, zon
 import { t, type MessageKey } from '../lib/i18n';
 import type { Category, Customer, Job, JobStatus, Member, Priority } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PriorityTag, RefTag, Spinner, StatusBadge } from '../components/ui';
+import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, PriorityTag, RefTag, Spinner, StatusBadge, usePaged } from '../components/ui';
 
 export const STATUSES: JobStatus[] = ['new', 'scheduled', 'assigned', 'in_progress', 'awaiting_parts', 'completed', 'cancelled'];
 const PRIORITIES: Priority[] = ['low', 'normal', 'high', 'urgent'];
@@ -56,6 +56,7 @@ export function JobList() {
     });
   }, [data, status, tech, priority, date, archived, q, tz]);
 
+  const paged = usePaged(rows);
   const update = (k: string, v: string) => { const p = new URLSearchParams(params); if (v) p.set(k, v); else p.delete(k); setParams(p, { replace: true }); };
 
   return (
@@ -88,7 +89,7 @@ export function JobList() {
             <table className="table">
               <thead><tr><th>{t('jobs.titleField')}</th><th className="hide-sm">{t('jobs.customer')}</th><th>{t('jobs.when')}</th><th className="hide-sm">{t('jobs.assignedTo')}</th><th>{t('jobs.status')}</th></tr></thead>
               <tbody>
-                {rows.map((j) => (
+                {paged.items.map((j) => (
                   <tr key={j.id}>
                     <td><Link to={`/jobs/${j.id}`} className="cell-link"><RefTag value={j.reference} /><strong>{j.title}</strong><small className="show-sm">{j.customer?.name}</small></Link></td>
                     <td className="hide-sm">{j.customer?.name}</td>
@@ -99,6 +100,7 @@ export function JobList() {
                 ))}
               </tbody>
             </table>
+            <Pager {...paged} />
           </div>
         )}
     </div>

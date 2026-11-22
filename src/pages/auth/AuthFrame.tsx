@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { t } from '../../lib/i18n';
+import { Logo } from '../../components/Logo';
 
 export function AuthFrame({ title, sub, children, footer }: { title: string; sub?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="auth">
       <section className="auth-side" aria-hidden>
-        <div className="brand brand-light"><span className="brand-mark">F</span>{t('app.name')}</div>
-        <p className="auth-tagline">{t('app.tagline')}</p>
+        <Logo size={34} />
+        <p className="auth-tagline">Control with confidence.</p>
         <div className="ticket">
           <div className="ticket-head"><span className="ref">JOB-0142</span><span className="badge st-in_progress">In progress</span></div>
           <div className="ticket-body">
@@ -19,11 +20,11 @@ export function AuthFrame({ title, sub, children, footer }: { title: string; sub
           </div>
           <div className="ticket-foot"><span>Today, 10:30</span><strong>3 photos</strong></div>
         </div>
-        <p className="auth-note">Every job, customer and technician in one place, in your currency and time zone.</p>
+        <p className="auth-note">{t('app.pitch')} Works in your currency, time zone and tax rules.</p>
       </section>
       <section className="auth-main">
         <div className="auth-card">
-          <div className="brand auth-brand-mobile"><span className="brand-mark">F</span>{t('app.name')}</div>
+          <div className="auth-brand-mobile"><Logo size={30} tagline /></div>
           <h1>{title}</h1>
           {sub && <p className="muted">{sub}</p>}
           {children}

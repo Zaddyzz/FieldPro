@@ -1,4 +1,6 @@
-# FieldPro
+# COVARO
+
+Control with confidence. (Formerly FieldPro.)
 
 Multi-tenant field-service management for CCTV, solar and internet/network businesses, in any country.
 Owned by Espring Global Ventures.

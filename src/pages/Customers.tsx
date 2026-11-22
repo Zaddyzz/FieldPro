@@ -9,7 +9,7 @@ import { formatDateTime } from '../lib/format';
 import { t } from '../lib/i18n';
 import type { Customer, Job } from '../lib/types';
 import { isOverdue } from '../lib/types';
-import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, PhoneInput, RefTag, Spinner, StatusBadge, useToast } from '../components/ui';
+import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, PhoneInput, RefTag, Spinner, StatusBadge, usePaged, useToast } from '../components/ui';
 
 export function CustomerList() {
   const { business } = useBusiness();
@@ -30,6 +30,7 @@ export function CustomerList() {
       (!needle || c.name.toLowerCase().includes(needle) || (digits.length >= 3 && c.phone.includes(digits))));
   }, [data, q, status, city]);
 
+  const paged = usePaged(rows);
   const update = (k: string, v: string) => { const p = new URLSearchParams(params); if (v) p.set(k, v); else p.delete(k); setParams(p, { replace: true }); };
 
   return (
@@ -53,7 +54,7 @@ export function CustomerList() {
             <table className="table">
               <thead><tr><th>{t('cust.name')}</th><th>{t('cust.phone')}</th><th className="hide-sm">{t('cust.city')}</th><th className="hide-sm">{t('cust.email')}</th></tr></thead>
               <tbody>
-                {rows.map((c) => (
+                {paged.items.map((c) => (
                   <tr key={c.id}>
                     <td><Link to={`/customers/${c.id}`} className="cell-link"><strong>{c.name}</strong>{c.kind === 'company' && <small>{t('cust.company')}</small>}</Link></td>
                     <td className="num">{c.phone}</td>
@@ -63,6 +64,7 @@ export function CustomerList() {
                 ))}
               </tbody>
             </table>
+            <Pager {...paged} />
           </div>
         )}
     </div>

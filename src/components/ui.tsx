@@ -117,3 +117,27 @@ export const initials = (name: string | null | undefined) =>
 export function Avatar({ name }: { name: string | null | undefined }) {
   return <span className="avatar" aria-hidden>{initials(name)}</span>;
 }
+
+/** Client-side pagination for lists already loaded and filtered in memory. */
+export function usePaged<T>(rows: T[], pageSize = 25) {
+  const [page, setPage] = useState(0);
+  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const current = Math.min(page, pages - 1);
+  useEffect(() => { setPage(0); }, [rows.length]);
+  return { items: rows.slice(current * pageSize, current * pageSize + pageSize), page: current, pages, setPage, total: rows.length, pageSize };
+}
+
+export function Pager({ page, pages, total, pageSize, setPage }: { page: number; pages: number; total: number; pageSize: number; setPage: (n: number) => void }) {
+  if (total <= pageSize) return null;
+  const from = page * pageSize + 1;
+  const to = Math.min(total, from + pageSize - 1);
+  return (
+    <nav className="pager" aria-label="Pagination">
+      <span>{t('pager.showing', { from, to, total })}</span>
+      <span className="pager-btns">
+        <button className="btn btn-secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>{t('pager.prev')}</button>
+        <button className="btn btn-secondary" disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>{t('pager.next')}</button>
+      </span>
+    </nav>
+  );
+}

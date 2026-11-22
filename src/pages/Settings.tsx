@@ -4,6 +4,7 @@ import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
 import { COUNTRIES, countryByCode, CURRENCIES, toE164 } from '../lib/countries';
 import { t } from '../lib/i18n';
+import { useTheme, type ThemeChoice } from '../lib/theme';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { Button, ErrorBox, Field, LinkButton, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
 
@@ -17,6 +18,7 @@ export default function Settings() {
         : <Notice>{t('settings.ownerOnly')}</Notice>}
       <ProfileSettings key={profile?.id} country={business.country} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
       {role === 'technician' && <TechSettings />}
+      <Appearance />
       {toast.node}
     </div>
   );
@@ -146,5 +148,23 @@ function TechForm({ initial, onSave, toastNode }: { initial: { service_area: str
       <div className="form-actions"><Button type="submit">{t('common.save')}</Button></div>
       {toastNode}
     </form>
+  );
+}
+
+function Appearance() {
+  const { choice, setChoice } = useTheme();
+  const opts: ThemeChoice[] = ['light', 'dark', 'system'];
+  return (
+    <section className="card stack">
+      <h2 className="card-title">{t('theme.title')}</h2>
+      <div className="segmented" role="radiogroup" aria-label={t('theme.title')}>
+        {opts.map((o) => (
+          <button key={o} type="button" role="radio" aria-checked={choice === o} className={choice === o ? 'on' : ''} onClick={() => setChoice(o)}>
+            {t(`theme.${o}` as const)}
+          </button>
+        ))}
+      </div>
+      <p className="fine">{t('theme.hint')}</p>
+    </section>
   );
 }

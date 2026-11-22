@@ -1,8 +1,9 @@
 // All user-facing text lives here so other languages can be added later
 // by supplying another dictionary with the same keys.
 const en = {
-  'app.name': 'FieldPro',
-  'app.tagline': 'Run every job. Manage every customer. Grow your business.',
+  'app.name': 'COVARO',
+  'app.tagline': 'CONTROL WITH CONFIDENCE.',
+  'app.pitch': 'Run every job, customer and technician from one place.',
 
   'nav.overview': 'Overview', 'nav.jobs': 'Jobs', 'nav.schedule': 'Schedule', 'nav.customers': 'Customers',
   'nav.team': 'Team', 'nav.settings': 'Settings', 'nav.myJobs': 'My jobs', 'nav.more': 'More', 'nav.signOut': 'Sign out',
@@ -15,7 +16,7 @@ const en = {
   'common.retry': 'Try again', 'common.none': 'None', 'common.add': 'Add', 'common.call': 'Call',
 
   'auth.signIn': 'Sign in', 'auth.signingIn': 'Signing in…', 'auth.email': 'Email', 'auth.password': 'Password',
-  'auth.forgot': 'Forgot password?', 'auth.noAccount': 'New to FieldPro?', 'auth.createAccount': 'Create a business account',
+  'auth.forgot': 'Forgot password?', 'auth.noAccount': 'New to COVARO?', 'auth.createAccount': 'Create a business account',
   'auth.haveAccount': 'Already have an account?', 'auth.signUpTitle': 'Set up your business',
   'auth.signUpSub': '14-day free trial. No card needed.',
   'auth.businessName': 'Business name', 'auth.ownerName': 'Your full name', 'auth.phone': 'Phone',
@@ -77,8 +78,8 @@ const en = {
   'team.role': 'Role', 'team.sendInvite': 'Create invite', 'team.pending': 'Pending invites', 'team.members': 'Members',
   'team.shareEmail': 'Send by email', 'team.shareWhatsApp': 'Send on WhatsApp', 'team.revoke': 'Revoke',
   'team.expires': 'Expires {date}', 'team.deactivate': 'Deactivate', 'team.reactivate': 'Reactivate', 'team.deactivated': 'Deactivated',
-  'team.you': 'You', 'team.serviceArea': 'Service area', 'team.skills': 'Skills', 'team.inviteMessage': 'You have been invited to join {business} on FieldPro as {role}. Sign up with {email}, then open this link: {link}',
-  'team.inviteSubject': 'Join {business} on FieldPro', 'team.noInvites': 'No pending invites.',
+  'team.you': 'You', 'team.serviceArea': 'Service area', 'team.skills': 'Skills', 'team.inviteMessage': 'You have been invited to join {business} on COVARO as {role}. Sign up with {email}, then open this link: {link}',
+  'team.inviteSubject': 'Join {business} on COVARO', 'team.noInvites': 'No pending invites.',
   'team.deactivateConfirm': 'Remove this person’s access to this business? Their past work stays on record.',
 
   'invite.title': 'Join a business', 'invite.body': '{business} invited {email} to join as {role}.',
@@ -104,7 +105,10 @@ const en = {
   'setup.inviteAdd': 'Add invite', 'setup.invited': 'Invite created for {email}. Share its link from the Team page.',
   'setup.noInvites': 'No invites yet. You can also do this later from Team.',
   'setup.done': 'Setup complete', 'setup.open': 'Run quick setup again', 'setup.example': 'Your first job will be {ref}',
-  'error.generic': 'Something went wrong.', 'error.notConfigured': 'FieldPro is not connected to its database yet.',
+  'theme.title': 'Appearance', 'theme.light': 'Light', 'theme.dark': 'Dark', 'theme.system': 'Match device',
+  'theme.toggle': 'Switch light or dark mode', 'theme.hint': 'Saved on this device only.',
+  'pager.showing': '{from}–{to} of {total}', 'pager.prev': 'Previous', 'pager.next': 'Next',
+  'error.generic': 'Something went wrong.', 'error.notConfigured': 'COVARO is not connected to its database yet.',
   'error.forbidden': 'You do not have access to this page.',
 } as const;
 

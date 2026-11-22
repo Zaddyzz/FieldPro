@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Briefcase, CalendarDays, ChevronDown, LayoutGrid, LogOut, Menu, Settings, Users, UserSquare2, Wrench, X } from 'lucide-react';
+import { Briefcase, CalendarDays, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
+import { useTheme } from '../lib/theme';
+import { Logo, LogoMark } from './Logo';
 import { useBusiness } from '../lib/session';
 import { t, type MessageKey } from '../lib/i18n';
 import { Avatar } from './ui';
@@ -12,6 +14,8 @@ export function Layout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [switcher, setSwitcher] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const ThemeIcon = theme.resolved() === 'dark' ? Sun : Moon;
 
   const items: NavItem[] = isManager
     ? [
@@ -35,7 +39,7 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark" aria-hidden>F</span>{t('app.name')}</div>
+        <Logo size={30} tagline />
         <div className="biz-block">
           <button className="biz-switch" onClick={() => memberships.length > 1 && setSwitcher((v) => !v)} aria-expanded={switcher}>
             <span className="biz-name">{business.name}</span>
@@ -61,15 +65,17 @@ export function Layout() {
         <div className="side-foot">
           <Avatar name={profile?.full_name} />
           <div className="side-user"><strong>{profile?.full_name || profile?.email}</strong><small>{profile?.email}</small></div>
+          <button className="icon-btn" onClick={theme.toggle} aria-label={t('theme.toggle')} title={t('theme.toggle')}><ThemeIcon size={18} /></button>
           <button className="icon-btn" onClick={doSignOut} aria-label={t('nav.signOut')} title={t('nav.signOut')}><LogOut size={18} /></button>
         </div>
       </aside>
 
       <div className="topbar">
-        <span className="brand-mark" aria-hidden>F</span>
+        <LogoMark size={26} />
         <button className="topbar-biz" onClick={() => memberships.length > 1 && setSwitcher((v) => !v)}>
           {business.name}{memberships.length > 1 && <ChevronDown size={14} />}
         </button>
+        <button className="icon-btn" onClick={theme.toggle} aria-label={t('theme.toggle')}><ThemeIcon size={18} /></button>
         {switcher && (
           <ul className="biz-menu biz-menu-mobile">
             {memberships.map((m) => (
