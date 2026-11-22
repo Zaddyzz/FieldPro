@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Briefcase, CalendarDays, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
+import { Banknote, Briefcase, CalendarDays, ChevronDown, Cpu, FileText, Home, LayoutGrid, LogOut, Menu, Moon, Receipt, RefreshCcw, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { LogoFull, LogoMark } from './Logo';
 import { useBusiness } from '../lib/session';
@@ -11,6 +11,7 @@ interface NavItem { to: string; label: MessageKey; icon: typeof LayoutGrid; end?
 
 export function Layout() {
   const { business, role, memberships, switchBusiness, signOut, profile, isManager, isAdmin } = useBusiness();
+  const isCustomer = role === 'customer';
   const [moreOpen, setMoreOpen] = useState(false);
   const [switcher, setSwitcher] = useState(false);
   const navigate = useNavigate();
@@ -21,9 +22,18 @@ export function Layout() {
     ? [
         { to: '/', label: 'nav.overview', icon: LayoutGrid, end: true },
         { to: '/jobs', label: 'nav.jobs', icon: Briefcase },
-        { to: '/schedule', label: 'nav.schedule', icon: CalendarDays },
+        { to: '/invoices', label: 'nav.invoices', icon: Receipt },
         { to: '/customers', label: 'nav.customers', icon: UserSquare2 },
+        { to: '/schedule', label: 'nav.schedule', icon: CalendarDays },
+        { to: '/quotes', label: 'nav.quotes', icon: FileText },
+        { to: '/payments', label: 'nav.payments', icon: Banknote },
+        { to: '/equipment', label: 'nav.equipment', icon: Cpu },
+        { to: '/maintenance', label: 'nav.maintenance', icon: RefreshCcw },
         ...(isAdmin ? [{ to: '/team', label: 'nav.team' as MessageKey, icon: Users }] : []),
+        { to: '/settings', label: 'nav.settings', icon: Settings },
+      ]
+    : isCustomer ? [
+        { to: '/', label: 'nav.portal', icon: Home, end: true },
         { to: '/settings', label: 'nav.settings', icon: Settings },
       ]
     : [

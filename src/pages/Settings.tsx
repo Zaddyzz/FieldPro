@@ -17,6 +17,7 @@ export default function Settings() {
       {isAdmin ? <BusinessSettings key={business.id + (settings?.job_prefix ?? '')} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
         : <Notice>{t('settings.ownerOnly')}</Notice>}
       <ProfileSettings key={profile?.id} country={business.country} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
+      {isAdmin && <InvoiceSettings />}
       {role === 'technician' && <TechSettings />}
       <Appearance />
       {toast.node}
@@ -166,5 +167,56 @@ function Appearance() {
       </div>
       <p className="fine">{t('theme.hint')}</p>
     </section>
+  );
+}
+
+function InvoiceSettings() {
+  const { business } = useBusiness();
+  const toast = useToast();
+  const { data, loading } = useAsync(async () =>
+    must(await supabase.from('business_settings').select('quote_prefix, invoice_prefix, default_tax_rate, invoice_terms_days, payment_instructions, tax_number, payment_methods').eq('business_id', business.id).single()) as
+      { quote_prefix: string; invoice_prefix: string; default_tax_rate: number; invoice_terms_days: number; payment_instructions: string | null; tax_number: string | null; payment_methods: string[] },
+  [business.id]);
+  if (loading || !data) return null;
+  return <InvoiceForm key={business.id} initial={data} onSave={async (p) => {
+    const { error } = await supabase.rpc('update_business_settings', { p_business: business.id, p });
+    toast.show(error ? errorMessage(error) : t('settings.saved'));
+  }} toastNode={toast.node} />;
+}
+
+function InvoiceForm({ initial, onSave, toastNode }: { initial: { quote_prefix: string; invoice_prefix: string; default_tax_rate: number; invoice_terms_days: number; payment_instructions: string | null; tax_number: string | null; payment_methods: string[] }; onSave: (p: Record<string, unknown>) => Promise<void>; toastNode: React.ReactNode }) {
+  const [f, setF] = useState({ quote_prefix: initial.quote_prefix, invoice_prefix: initial.invoice_prefix, default_tax_rate: String(initial.default_tax_rate),
+    invoice_terms_days: String(initial.invoice_terms_days), payment_instructions: initial.payment_instructions ?? '', tax_number: initial.tax_number ?? '',
+    methods: initial.payment_methods.join(', ') });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const rate = Number(f.default_tax_rate); const days = Number(f.invoice_terms_days);
+    if (!/^[A-Z0-9-]{1,10}$/.test(f.quote_prefix) || !/^[A-Z0-9-]{1,10}$/.test(f.invoice_prefix)) return setError('Prefixes: up to 10 capital letters, numbers or dashes.');
+    if (!(rate >= 0 && rate <= 100) || !(Number.isInteger(days) && days >= 0 && days <= 365)) return setError(t('set.taxRate'));
+    const methods = f.methods.split(',').map((m) => m.trim()).filter(Boolean).slice(0, 12);
+    setBusy(true); setError(null);
+    await onSave({ quote_prefix: f.quote_prefix, invoice_prefix: f.invoice_prefix, default_tax_rate: rate, invoice_terms_days: days,
+      payment_instructions: f.payment_instructions.trim(), tax_number: f.tax_number.trim(), payment_methods: methods.length ? methods : ['Cash'] });
+    setBusy(false);
+  };
+  return (
+    <form className="card stack" onSubmit={submit}>
+      <h2 className="card-title">{t('set.invoicing')}</h2>
+      {error && <ErrorBox message={error} />}
+      <div className="grid-2">
+        <Field label={t('set.quotePrefix')} hint={`${f.quote_prefix}0001`}><input value={f.quote_prefix} onChange={(e) => setF((x) => ({ ...x, quote_prefix: e.target.value.toUpperCase() }))} maxLength={10} /></Field>
+        <Field label={t('set.invoicePrefix')} hint={`${f.invoice_prefix}0001`}><input value={f.invoice_prefix} onChange={(e) => setF((x) => ({ ...x, invoice_prefix: e.target.value.toUpperCase() }))} maxLength={10} /></Field>
+        <Field label={t('set.taxRate')}><input inputMode="decimal" value={f.default_tax_rate} onChange={set('default_tax_rate')} /></Field>
+        <Field label={t('set.terms')}><input inputMode="numeric" value={f.invoice_terms_days} onChange={set('invoice_terms_days')} /></Field>
+      </div>
+      <Field label={t('set.taxNumber')} optional><input value={f.tax_number} onChange={set('tax_number')} maxLength={60} /></Field>
+      <Field label={t('set.payInstructions')} hint={t('set.payInstructionsHint')} optional><textarea rows={3} value={f.payment_instructions} onChange={set('payment_instructions')} maxLength={1000} /></Field>
+      <Field label={t('set.methods')} hint={t('set.methodsHint')}><input value={f.methods} onChange={set('methods')} /></Field>
+      <div className="form-actions"><Button type="submit" busy={busy}>{t('common.save')}</Button></div>
+      {toastNode}
+    </form>
   );
 }

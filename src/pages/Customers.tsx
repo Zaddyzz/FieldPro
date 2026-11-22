@@ -5,10 +5,12 @@ import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
 import { countryByCode, toE164 } from '../lib/countries';
-import { formatDateTime } from '../lib/format';
+import { formatDate, formatDateTime } from '../lib/format';
+import { money } from '../lib/money';
 import { t } from '../lib/i18n';
-import type { Customer, Job } from '../lib/types';
-import { isOverdue } from '../lib/types';
+import type { Customer, Doc, Equipment, Job } from '../lib/types';
+import { isOverdue, todayIn } from '../lib/types';
+import { DocStatus } from './Docs';
 import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, PhoneInput, RefTag, Spinner, StatusBadge, usePaged, useToast } from '../components/ui';
 
 export function CustomerList() {
@@ -158,13 +160,22 @@ export function CustomerDetail() {
   const { id = '' } = useParams();
   const { business } = useBusiness();
   const toast = useToast();
+  const { session, isAdmin } = useBusiness();
+  const today = todayIn(business.time_zone);
   const { data, error, loading, reload } = useAsync(async () => {
-    const [c, jobs] = await Promise.all([
+    const [c, jobs, equipment, quotes, invoices, contacts, invites] = await Promise.all([
       supabase.from('customers').select('*').eq('id', id).maybeSingle().then(must),
       supabase.from('jobs').select('*').eq('customer_id', id).order('created_at', { ascending: false }).then(must),
+      supabase.from('equipment').select('id, name, serial_number, warranty_expires_on, status').eq('customer_id', id).eq('status', 'active').order('name').then(must),
+      supabase.from('quotations').select('id, reference, status, total_minor, currency, valid_until').eq('customer_id', id).order('created_at', { ascending: false }).then(must),
+      supabase.from('invoices').select('id, reference, status, total_minor, balance_minor, due_date, currency').eq('customer_id', id).order('created_at', { ascending: false }).then(must),
+      supabase.from('customer_contacts').select('user_id').eq('customer_id', id).then(must),
+      supabase.from('invitations').select('id, email, token, accepted_at, revoked_at, expires_at').eq('customer_id', id).is('accepted_at', null).is('revoked_at', null).then(must),
     ]);
-    return { customer: c as Customer | null, jobs: jobs as Job[] };
+    return { customer: c as Customer | null, jobs: jobs as Job[], equipment: equipment as Pick<Equipment, 'id' | 'name' | 'serial_number' | 'warranty_expires_on'>[],
+             quotes: quotes as Doc[], invoices: invoices as Doc[], contacts: (contacts as unknown[]).length, invites: invites as { id: string; email: string; token: string }[] };
   }, [id]);
+  const [portalEmail, setPortalEmail] = useState('');
 
   if (loading && !data) return <Spinner />;
   if (error) return <ErrorBox message={error} onRetry={reload} />;
@@ -187,6 +198,15 @@ export function CustomerDetail() {
           <LinkButton to={`/customers/${c.id}/edit`} variant="secondary">{t('common.edit')}</LinkButton>
           <Button variant="ghost" onClick={toggleArchive}>{c.status === 'active' ? t('common.archive') : t('common.restore')}</Button>
         </>} />
+      {c.status === 'active' && (
+        <div className="doc-actions">
+          <LinkButton to={`/jobs/new?customer=${c.id}`} variant="secondary"><Plus size={16} />{t('jobs.new')}</LinkButton>
+          <LinkButton to={`/quotes/new?customer=${c.id}`} variant="secondary"><Plus size={16} />{t('doc.newQuote')}</LinkButton>
+          <LinkButton to={`/invoices/new?customer=${c.id}`} variant="secondary"><Plus size={16} />{t('doc.newInvoice')}</LinkButton>
+          <LinkButton to={`/equipment/new?customer=${c.id}`} variant="secondary"><Plus size={16} />{t('eq.new')}</LinkButton>
+          <LinkButton to={`/maintenance/new?customer=${c.id}`} variant="secondary"><Plus size={16} />{t('mt.new')}</LinkButton>
+        </div>
+      )}
       <div className="two-col">
         <section className="panel">
           <dl className="facts">
@@ -213,6 +233,58 @@ export function CustomerDetail() {
             </ul>
           )}
         </section>
+      </div>
+      <div className="two-col section-gap">
+        <section className="panel">
+          <h2 className="panel-title">{t('nav.invoices')} / {t('nav.quotes')}</h2>
+          {data.invoices.length + data.quotes.length === 0 ? <p className="muted pad">{t('portal.noItems')}</p> : (
+            <ul className="rows">
+              {data.invoices.map((d) => (
+                <li key={d.id}><Link to={`/invoices/${d.id}`} className="row-link"><span className="row-main"><strong>{money(d.balance_minor, d.currency)}</strong>
+                  <span className="meta"><span className="ref">{d.reference}</span><span>{t('doc.due')} {formatDate(d.due_date ? d.due_date + 'T12:00:00Z' : null, 'UTC', business.date_format)}</span></span></span>
+                  <DocStatus doc={d} kind="invoice" today={today} /></Link></li>))}
+              {data.quotes.map((d) => (
+                <li key={d.id}><Link to={`/quotes/${d.id}`} className="row-link"><span className="row-main"><strong>{money(d.total_minor, d.currency)}</strong>
+                  <span className="meta"><span className="ref">{d.reference}</span><span>{t('doc.quote')}</span></span></span>
+                  <DocStatus doc={d} kind="quote" today={today} /></Link></li>))}
+            </ul>
+          )}
+        </section>
+        <div className="stack">
+          <section className="panel">
+            <h2 className="panel-title">{t('nav.equipment')}</h2>
+            {data.equipment.length === 0 ? <p className="muted pad">{t('mt.noEquipment')}</p> : (
+              <ul className="rows">{data.equipment.map((e) => (
+                <li key={e.id}><Link to={`/equipment/${e.id}`} className="row-link"><span className="row-main"><strong>{e.name}</strong><small>{e.serial_number ?? ''}</small></span></Link></li>))}</ul>
+            )}
+          </section>
+          {isAdmin && (
+            <section className="panel">
+              <h2 className="panel-title">{t('portal.access')}</h2>
+              <div className="pad stack">
+                {data.contacts > 0 && <p>{t('common.active')}: {data.contacts}</p>}
+                {data.invites.map((iv) => (
+                  <div key={iv.id} className="invite-line">
+                    <span>{iv.email}</span>
+                    <button className="link" onClick={async () => { const link = `${window.location.origin}/invite/${iv.token}`; try { await navigator.clipboard.writeText(link); toast.show(t('common.copied')); } catch { window.prompt(t('common.copy'), link); } }}>{t('common.copy')}</button>
+                  </div>
+                ))}
+                <p className="fine">{t('portal.inviteHint')}</p>
+                <form className="inline-add" onSubmit={async (e) => {
+                  e.preventDefault();
+                  const email = portalEmail.trim().toLowerCase() || c.email || '';
+                  if (!email) return;
+                  const { error } = await supabase.from('invitations').insert({ business_id: business.id, email, role: 'customer', customer_id: c.id, invited_by: session!.user.id });
+                  if (error) return toast.show(errorMessage(error));
+                  setPortalEmail(''); reload();
+                }}>
+                  <input type="email" value={portalEmail} onChange={(e) => setPortalEmail(e.target.value)} placeholder={c.email ?? t('auth.email')} aria-label={t('auth.email')} />
+                  <Button type="submit" variant="secondary">{t('portal.invite')}</Button>
+                </form>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
       {toast.node}
     </div>

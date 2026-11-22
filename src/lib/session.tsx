@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { Business, Membership, Role } from './types';
 
-interface Settings { job_prefix: string; whatsapp_enabled: boolean; tax_inclusive: boolean; setup_completed_at: string | null }
+interface Settings { job_prefix: string; whatsapp_enabled: boolean; tax_inclusive: boolean; setup_completed_at: string | null; default_tax_rate: number }
 interface Subscription { plan: string; status: string; trial_ends_at: string | null }
 interface Profile { id: string; full_name: string; phone: string | null; email: string | null }
 
@@ -70,7 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!current) { setSettings(null); setSubscription(null); return; }
     let live = true;
     Promise.all([
-      supabase.from('business_settings').select('job_prefix, whatsapp_enabled, tax_inclusive, setup_completed_at').eq('business_id', current.business_id).maybeSingle(),
+      supabase.from('business_settings').select('job_prefix, whatsapp_enabled, tax_inclusive, setup_completed_at, default_tax_rate').eq('business_id', current.business_id).maybeSingle(),
       supabase.from('business_subscriptions').select('plan, status, trial_ends_at').eq('business_id', current.business_id).maybeSingle(),
     ]).then(([st, sub]) => {
       if (!live) return;

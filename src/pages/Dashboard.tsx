@@ -5,6 +5,8 @@ import { loadMembers, memberName, must, useAsync } from '../lib/data';
 import { dayKey, formatDate, formatTime, relativeFromNow, zonedLocalToUtc } from '../lib/format';
 import { t, type MessageKey } from '../lib/i18n';
 import type { Activity, Job } from '../lib/types';
+import { money } from '../lib/money';
+import { todayIn } from '../lib/types';
 import { isOverdue } from '../lib/types';
 import { ErrorBox, PageHeader, PriorityTag, RefTag, Spinner, StatusBadge } from '../components/ui';
 
@@ -23,7 +25,9 @@ export default function Dashboard() {
     const count = (q: PromiseLike<{ count: number | null; error: { message: string } | null }>) =>
       Promise.resolve(q).then((r) => { if (r.error) throw new Error(r.error.message); return r.count ?? 0; });
 
-    const [customers, techs, openRows, completed, overdue, todayJobs, activity, members] = await Promise.all([
+    const todayD = todayIn(tz); const monthD = todayD.slice(0, 8) + '01';
+    const in14 = new Date(new Date(todayD + 'T00:00:00Z').getTime() + 14 * 86400000).toISOString().slice(0, 10);
+    const [customers, techs, openRows, completed, overdue, todayJobs, activity, members, pays, unpaid, maintDue] = await Promise.all([
       count(supabase.from('customers').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('status', 'active')),
       count(supabase.from('business_members').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('role', 'technician').eq('status', 'active')),
       supabase.from('jobs').select('status').eq('business_id', b).eq('archived', false).in('status', [...OPEN]).limit(5000).then(must),
@@ -34,11 +38,18 @@ export default function Dashboard() {
       supabase.from('job_activities').select('id, kind, from_value, to_value, note, created_at, actor_id, job:jobs(id, reference, title)')
         .eq('business_id', b).order('created_at', { ascending: false }).limit(12).then(must),
       loadMembers(b),
+      supabase.from('payments').select('amount_minor').eq('business_id', b).gte('paid_on', monthD).then(must),
+      supabase.from('invoices').select('balance_minor, due_date').eq('business_id', b).in('status', ['sent', 'partially_paid']).then(must),
+      count(supabase.from('maintenance_contracts').select('id', { count: 'exact', head: true }).eq('business_id', b).eq('status', 'active').lte('next_service_on', in14)),
     ]);
+    const revenue = (pays as { amount_minor: number }[]).reduce((s, p) => s + p.amount_minor, 0);
+    const unpaidRows = unpaid as { balance_minor: number; due_date: string | null }[];
+    const outstanding = unpaidRows.reduce((s, i) => s + i.balance_minor, 0);
+    const overdueInvoices = unpaidRows.filter((i) => i.due_date && i.due_date < todayD && i.balance_minor > 0).length;
     const lanes = Object.fromEntries(OPEN.map((st) => [st, 0])) as Record<(typeof OPEN)[number], number>;
     for (const r of openRows as { status: (typeof OPEN)[number] }[]) lanes[r.status]++;
     const open = (openRows as unknown[]).length;
-    return { customers, techs, open, lanes, completed, overdue, todayJobs: todayJobs as Job[],
+    return { customers, techs, open, lanes, completed, overdue, revenue, outstanding, overdueInvoices, maintDue, todayJobs: todayJobs as Job[],
              activity: activity as unknown as (Activity & { job: { id: string; reference: string; title: string } | null })[], members };
   }, [business.id, tz]);
 
@@ -87,6 +98,12 @@ export default function Dashboard() {
       </section>
 
       <section className="figures">
+        <Metric label={t('dash.revenue')} text={money(data.revenue, business.currency)} to="/payments" />
+        <Metric label={t('dash.outstanding')} text={money(data.outstanding, business.currency)} to="/invoices?status=unpaid" />
+        <Metric label={t('dash.overdueInvoices')} value={data.overdueInvoices} to="/invoices?status=overdue" tone={data.overdueInvoices ? 'warn' : undefined} />
+        <Metric label={t('dash.maintDue')} value={data.maintDue} to="/maintenance" />
+      </section>
+      <section className="figures">
         <Metric label={t('dash.overdue')} value={data.overdue} to="/jobs?status=overdue" tone={data.overdue ? 'warn' : undefined} />
         <Metric label={t('dash.completedMonth')} value={data.completed} />
         <Metric label={t('dash.customers')} value={data.customers} to="/customers" />
@@ -134,8 +151,8 @@ export default function Dashboard() {
   );
 }
 
-function Metric({ label, value, to, tone }: { label: string; value: number; to?: string; tone?: 'warn' }) {
-  const inner = <><span className="metric-value">{value.toLocaleString()}</span><span className="metric-label">{label}</span></>;
+function Metric({ label, value, text, to, tone }: { label: string; value?: number; text?: string; to?: string; tone?: 'warn' }) {
+  const inner = <><span className="metric-value">{text ?? (value ?? 0).toLocaleString()}</span><span className="metric-label">{label}</span></>;
   return to ? <Link to={to} className={`metric ${tone ? `metric-${tone}` : ''}`}>{inner}</Link>
     : <div className={`metric ${tone ? `metric-${tone}` : ''}`}>{inner}</div>;
 }

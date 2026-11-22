@@ -17,6 +17,10 @@ import Team from './pages/Team';
 import Settings from './pages/Settings';
 import MyJobs from './pages/tech/MyJobs';
 import Setup from './pages/Setup';
+import { EquipmentDetail, EquipmentForm, EquipmentList } from './pages/Equipment';
+import { ContractDetail, ContractForm, ContractList } from './pages/Maintenance';
+import { DocEditor, DocList, DocView, PaymentList } from './pages/Docs';
+import { Portal, PortalDocument } from './pages/portal/Portal';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { ready, session, memberships, signOut } = useSession();
@@ -41,7 +45,8 @@ function ManagerOnly({ children, adminOnly }: { children: JSX.Element; adminOnly
 }
 
 function Home() {
-  const { isManager, isAdmin, settings } = useSession();
+  const { isManager, isAdmin, settings, role } = useSession();
+  if (role === 'customer') return <Portal />;
   if (isAdmin && settings && !settings.setup_completed_at) return <Navigate to="/setup" replace />;
   return isManager ? <Dashboard /> : <MyJobs />;
 }
@@ -75,6 +80,25 @@ export default function App() {
         <Route path="team" element={<ManagerOnly adminOnly><Team /></ManagerOnly>} />
         <Route path="settings" element={<Settings />} />
         <Route path="setup" element={<ManagerOnly adminOnly><Setup /></ManagerOnly>} />
+        <Route path="equipment" element={<ManagerOnly><EquipmentList /></ManagerOnly>} />
+        <Route path="equipment/new" element={<ManagerOnly><EquipmentForm /></ManagerOnly>} />
+        <Route path="equipment/:id" element={<ManagerOnly><EquipmentDetail /></ManagerOnly>} />
+        <Route path="equipment/:id/edit" element={<ManagerOnly><EquipmentForm /></ManagerOnly>} />
+        <Route path="maintenance" element={<ManagerOnly><ContractList /></ManagerOnly>} />
+        <Route path="maintenance/new" element={<ManagerOnly><ContractForm /></ManagerOnly>} />
+        <Route path="maintenance/:id" element={<ManagerOnly><ContractDetail /></ManagerOnly>} />
+        <Route path="maintenance/:id/edit" element={<ManagerOnly><ContractForm /></ManagerOnly>} />
+        <Route path="quotes" element={<ManagerOnly><DocList kind="quote" key="ql" /></ManagerOnly>} />
+        <Route path="quotes/new" element={<ManagerOnly><DocEditor kind="quote" key="qn" /></ManagerOnly>} />
+        <Route path="quotes/:id" element={<ManagerOnly><DocView kind="quote" key="qv" /></ManagerOnly>} />
+        <Route path="quotes/:id/edit" element={<ManagerOnly><DocEditor kind="quote" key="qe" /></ManagerOnly>} />
+        <Route path="invoices" element={<ManagerOnly><DocList kind="invoice" key="il" /></ManagerOnly>} />
+        <Route path="invoices/new" element={<ManagerOnly><DocEditor kind="invoice" key="in" /></ManagerOnly>} />
+        <Route path="invoices/:id" element={<ManagerOnly><DocView kind="invoice" key="iv" /></ManagerOnly>} />
+        <Route path="invoices/:id/edit" element={<ManagerOnly><DocEditor kind="invoice" key="ie" /></ManagerOnly>} />
+        <Route path="payments" element={<ManagerOnly><PaymentList /></ManagerOnly>} />
+        <Route path="portal/quote/:id" element={<PortalDocument kind="quote" key="pq" />} />
+        <Route path="portal/invoice/:id" element={<PortalDocument kind="invoice" key="pi" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

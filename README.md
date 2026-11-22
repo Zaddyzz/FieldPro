@@ -32,5 +32,5 @@ Rules every new table must follow:
 
 ## Phase status
 - Phase 1 (auth, team, customers, jobs, technician workspace, dashboard): built
-- Phase 2 (equipment, maintenance, quotes/invoices, payments, customer portal): not started
+- Phase 2 (equipment, maintenance, quotes/invoices, payments, customer portal): built — tests in supabase/tests/phase2_test.sql (35 checks)
 - Phase 3 (plans/limits, notifications, reports, platform admin): not started
