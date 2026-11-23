@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Phone, Plus } from 'lucide-react';
+import { MapPin, Phone, Plus } from 'lucide-react';
+import { directionsTo } from '../lib/maps';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
@@ -213,7 +214,7 @@ export function CustomerDetail() {
             <dt>{t('cust.phone')}</dt><dd><a href={`tel:${c.phone}`} className="tel"><Phone size={14} />{c.phone}</a></dd>
             {c.contact_person && <><dt>{t('cust.contact')}</dt><dd>{c.contact_person}</dd></>}
             <dt>{t('cust.email')}</dt><dd>{c.email ? <a href={`mailto:${c.email}`}>{c.email}</a> : '—'}</dd>
-            <dt>{t('cust.address1')}</dt><dd>{addr || '—'}</dd>
+            <dt>{t('cust.address1')}</dt><dd>{addr ? <a href={directionsTo(addr)} target="_blank" rel="noreferrer" className="map-inline"><MapPin size={14} />{addr}</a> : '—'}</dd>
             <dt>{t('cust.notes')}</dt><dd className="pre">{c.notes || '—'}</dd>
           </dl>
         </section>

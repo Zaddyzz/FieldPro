@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Camera, MapPin, MessageCircle, Phone } from 'lucide-react';
+import { jobMapsHref } from '../lib/maps';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage, PHOTO_BUCKET } from '../lib/supabase';
 import { loadMembers, memberName, must, useAsync } from '../lib/data';
@@ -46,7 +47,7 @@ export default function JobDetail() {
   const byUser = new Map(data.members.map((m) => [m.user_id, m]));
   const closed = job.status === 'completed' || job.status === 'cancelled';
   const canWork = isManager || !closed;
-  const mapsHref = job.map_link || (job.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}` : null);
+  const mapsHref = jobMapsHref(job);
 
   const setStatus = async (s: JobStatus, workDone?: string) => {
     const res = isManager && !workDone
@@ -92,7 +93,7 @@ export default function JobDetail() {
             </div>
             <dl className="facts">
               <dt>{t('jobs.when')}</dt><dd>{formatDateTime(job.scheduled_at, tz, business.date_format)}</dd>
-              <dt>{t('jobs.address')}</dt><dd>{job.address || '—'}</dd>
+              <dt>{t('jobs.address')}</dt><dd>{mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer" className="map-inline"><MapPin size={14} />{job.address || [job.customer?.address_line1, job.customer?.city].filter(Boolean).join(', ') || t('jobs.openMaps')}</a> : '—'}</dd>
               <dt>{t('jobs.assignedTo')}</dt><dd>{job.job_assignments?.length ? job.job_assignments.map((a) => memberName(byUser.get(a.user_id))).join(', ') : t('jobs.unassigned')}</dd>
               {job.description && <><dt>{t('jobs.description')}</dt><dd className="pre">{job.description}</dd></>}
               {job.internal_notes && <><dt>{t('jobs.internalNotes')}</dt><dd className="pre">{job.internal_notes}</dd></>}

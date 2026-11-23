@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Phone } from 'lucide-react';
+import { jobMapsHref } from '../../lib/maps';
 import { useBusiness } from '../../lib/session';
 import { supabase } from '../../lib/supabase';
 import { must, useAsync } from '../../lib/data';
@@ -50,7 +51,7 @@ function Group({ title, jobs, tz, fmt, timeOnly, tone }: { title: string; jobs: 
       <h2 className={tone === 'warn' ? 'warn-text' : ''}>{title} <span className="count">{jobs.length}</span></h2>
       <div className="job-cards">
         {jobs.map((j) => {
-          const maps = j.map_link || (j.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(j.address)}` : null);
+          const maps = jobMapsHref(j);
           return (
             <article key={j.id} className={`job-card prio-edge-${j.priority}`}>
               <Link to={`/jobs/${j.id}`} className="job-card-main">

@@ -814,3 +814,27 @@ body { background: radial-gradient(900px 520px at 90% -10%, var(--glow-a), trans
   .main { padding-bottom: 96px; }
   .more-panel { bottom: calc(78px + env(safe-area-inset-bottom)); left: 10px; right: 10px; border-radius: var(--r-lg); border: 1px solid var(--line); }
 }
+.map-inline { display: inline-flex; align-items: flex-start; gap: 6px; }
+.map-inline svg { flex: none; margin-top: 4px; color: var(--primary); }
+.map-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 16px; }
+
+/* Map picker */
+.mp { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; }
+.mp-loading { align-items: center; justify-content: center; }
+.mp-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--line); z-index: 2; }
+.mp-search { flex: 1; display: flex; align-items: center; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 4px 0 14px; min-width: 0; }
+.mp-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 16px; min-height: 44px; outline: none; }
+.mp-map { flex: 1; min-height: 0; }
+.mp-pin { position: fixed; left: 50%; top: 50%; z-index: 1000; width: 36px; height: 36px; margin: -36px 0 0 -18px; pointer-events: none; display: flex; align-items: center; justify-content: center; color: #fff;
+  background: var(--primary); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+.mp-pin svg { transform: rotate(45deg); color: var(--on-primary); }
+.mp-bottom { background: var(--surface); border-top: 1px solid var(--line); padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); display: grid; gap: 10px; z-index: 2; }
+.mp-hint { margin: 0; font-size: 14px; color: var(--text-2); text-align: center; }
+.mp-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.leaflet-container { font: inherit; background: #e8e2dc; }
+
+/* Fixes from phone testing: raised button stays visible on its own page; solid top bar; date field fits */
+.bottom-nav a.nav-fab.active, .bottom-nav a.nav-fab { color: var(--on-primary); }
+.bottom-nav a.nav-fab.active { background: var(--primary); }
+:root[data-theme='dark'] .topbar { background: #100e11; }
+input[type='datetime-local'], input[type='date'], input[type='time'] { min-width: 0; max-width: 100%; width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
