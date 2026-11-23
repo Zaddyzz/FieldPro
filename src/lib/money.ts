@@ -16,7 +16,7 @@ export const minorToInput = (minor: number, currency: string) => (minor / 10 ** 
 
 export function money(minor: number | null | undefined, currency: string): string {
   const d = digits(currency);
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: d, maximumFractionDigits: d })
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', minimumFractionDigits: d, maximumFractionDigits: d })
     .format((minor ?? 0) / 10 ** d);
 }
 
