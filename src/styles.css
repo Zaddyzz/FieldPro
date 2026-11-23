@@ -814,3 +814,6 @@ body { background: radial-gradient(900px 520px at 90% -10%, var(--glow-a), trans
   .main { padding-bottom: 96px; }
   .more-panel { bottom: calc(78px + env(safe-area-inset-bottom)); left: 10px; right: 10px; border-radius: var(--r-lg); border: 1px solid var(--line); }
 }
+.map-inline { display: inline-flex; align-items: flex-start; gap: 6px; }
+.map-inline svg { flex: none; margin-top: 4px; color: var(--primary); }
+.map-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: -6px 0 16px; }

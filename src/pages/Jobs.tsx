@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LocateFixed, MapPin, Plus } from 'lucide-react';
+import { directionsTo, pinLink } from '../lib/maps';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { loadMembers, memberName, must, useAsync } from '../lib/data';
@@ -210,6 +211,16 @@ function JobFormInner({ data, presetCustomer, onDone }: {
   const [error, setError] = useState<string | null>(null);
   const [errs, setErrs] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const [locating, setLocating] = useState(false);
+  const useMyLocation = () => {
+    if (!('geolocation' in navigator)) { setErrs((e) => ({ ...e, map_link: t('jobs.locationFailed') })); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setLocating(false); setErrs((e) => { const { map_link: _drop, ...rest } = e; return rest; }); setF((x) => ({ ...x, map_link: pinLink(pos.coords.latitude, pos.coords.longitude) })); },
+      () => { setLocating(false); setErrs((e) => ({ ...e, map_link: t('jobs.locationFailed') })); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    );
+  };
 
   const pickCustomer = (cid: string) => {
     const c = data.customers.find((x) => x.id === cid);
@@ -297,6 +308,10 @@ function JobFormInner({ data, presetCustomer, onDone }: {
         </Field>
         <Field label={t('jobs.address')} optional><input value={f.address} onChange={set('address')} /></Field>
         <Field label={t('jobs.mapLink')} hint={t('jobs.mapLinkHint')} error={errs.map_link} optional><input type="url" inputMode="url" value={f.map_link} onChange={set('map_link')} placeholder="https://" /></Field>
+        <div className="map-tools">
+          <Button type="button" variant="secondary" busy={locating} onClick={useMyLocation}><LocateFixed size={16} />{t('jobs.useLocation')}</Button>
+          {(f.map_link || f.address.trim()) && <a className="btn btn-secondary" href={f.map_link || directionsTo(f.address.trim())} target="_blank" rel="noreferrer"><MapPin size={16} />{t('jobs.checkMap')}</a>}
+        </div>
         <Field label={t('jobs.internalNotes')} hint={t('jobs.internalHint')} optional><textarea rows={3} value={f.internal_notes} onChange={set('internal_notes')} /></Field>
         <div className="form-actions">
           <Button type="submit" busy={busy} disabled={data.customers.length === 0 && !j}>{busy ? t('common.saving') : j ? t('jobs.saveChanges') : t('jobs.create')}</Button>
