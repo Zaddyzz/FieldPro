@@ -145,7 +145,7 @@ const en = {
   'doc.sendPdf': 'Send PDF', 'doc.sendPdfReady': 'Tap to send PDF', 'doc.downloadPdf': 'Download PDF', 'doc.pdfReady': 'PDF ready. Tap Send PDF again to choose WhatsApp, Gmail or another app.',
   'doc.pdfDownloaded': 'PDF saved to your downloads. Attach it in WhatsApp or email.', 'doc.pdfFailed': 'Could not make the PDF. Try again, or use Print.',
   'doc.waMessage': 'Hello {name}, here is {kind} {ref} from {business} for {amount}. The PDF is attached.', 'doc.amountDue': 'Amount due',
-  'doc.thanks': 'Thank you for your business.', 'doc.madeWith': 'Created with COVARO',
+  'doc.thanks': 'Thank you for your business.', 'doc.madeWith': 'Created with COVARO', 'doc.madeBy': 'Created by {business} with COVARO',
   'doc.convert': 'Convert to invoice', 'doc.accept': 'Mark accepted', 'doc.reject': 'Mark rejected', 'doc.cancelInvoice': 'Cancel invoice',
   'doc.cancelConfirm': 'Cancel this invoice? It stays on record as cancelled.', 'doc.locked': 'Items are locked because this invoice has payments or is cancelled.',
   'doc.closedQuote': 'This quotation is closed.', 'doc.job': 'Related job', 'doc.none': 'None', 'doc.billTo': 'Bill to', 'doc.from': 'From',

@@ -266,7 +266,7 @@ function Totals({ totals, currency, taxLabel, rate, inclusive, paid, balance }: 
 
 export function DocView({ kind }: { kind: DocKind }) {
   const { id = '' } = useParams();
-  const { business, isAdmin } = useBusiness();
+  const { business, isAdmin, subscription } = useBusiness();
   const navigate = useNavigate();
   const toast = useToast();
   const today = todayIn(business.time_zone);
@@ -424,7 +424,7 @@ export function DocView({ kind }: { kind: DocKind }) {
         </div>
         <footer className="pp-thanks">
           <strong>{t('doc.thanks')}</strong>
-          <span>{t('doc.madeWith')}</span>
+          <span>{subscription?.status === 'active' ? t('doc.madeBy', { business: business.name }) : t('doc.madeWith')}</span>
         </footer>
       </article>
 
