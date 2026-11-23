@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, Banknote, Briefcase, ShieldCheck, CalendarDays, ChevronDown, Cpu, FileText, Home, LayoutGrid, LogOut, Menu, Moon, Receipt, RefreshCcw, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
+import { BarChart3, Banknote, Briefcase, ShieldCheck, CalendarDays, ChevronDown, Cpu, FileText, Home, LayoutGrid, LogOut, Menu, Moon, Plus, Receipt, RefreshCcw, Settings, Sun, Users, UserSquare2, Wrench, X } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { LogoFull, LogoMark } from './Logo';
 import { useBusiness } from '../lib/session';
@@ -45,8 +45,9 @@ export function Layout() {
       ];
 
   if (isPlatformAdmin) items.push({ to: '/admin', label: 'nav.admin', icon: ShieldCheck });
-  const primary = items.slice(0, 4);
-  const overflow = items.slice(4);
+  // Managers get a raised "New job" button in the middle of the phone bar.
+  const primary = isManager ? items.slice(0, 3) : items.slice(0, 4);
+  const overflow = isManager ? items.slice(3) : items.slice(4);
 
   const doSignOut = async () => { await signOut(); navigate('/login'); };
 
@@ -104,10 +105,17 @@ export function Layout() {
       <main className="main"><PlanBanner /><Outlet /></main>
 
       <nav className="bottom-nav">
-        {primary.map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMoreOpen(false)}>
-            <i.icon size={20} strokeWidth={1.8} /><span>{t(i.label)}</span>
-          </NavLink>
+        {primary.map((i, n) => (
+          <Fragment key={i.to}>
+            {isManager && n === 2 && (
+              <NavLink to="/jobs/new" className="nav-fab" aria-label={t('jobs.new')} onClick={() => setMoreOpen(false)}>
+                <Plus size={22} strokeWidth={2.2} />
+              </NavLink>
+            )}
+            <NavLink to={i.to} end={i.end} className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMoreOpen(false)}>
+              <i.icon size={20} strokeWidth={1.8} /><span>{t(i.label)}</span>
+            </NavLink>
+          </Fragment>
         ))}
         <button className={moreOpen ? 'active' : ''} onClick={() => setMoreOpen((v) => !v)}>
           {moreOpen ? <X size={20} /> : <Menu size={20} />}<span>{t('nav.more')}</span>
