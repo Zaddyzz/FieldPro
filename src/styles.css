@@ -243,11 +243,6 @@ a.metric:hover .metric-label { text-decoration: underline; }
 .metric-value { font-family: var(--font-brand); font-size: 26px; font-weight: 700; line-height: 1.25; }
 .metric-label { font-size: 13.5px; color: var(--text-3); }
 .metric-warn .metric-value { color: var(--danger); }
-.onboard { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 18px 22px; margin-bottom: 20px; }
-.onboard h2 { font-size: 17px; }
-.onboard ol { margin: 10px 0 0; padding-left: 22px; display: flex; gap: 10px 34px; flex-wrap: wrap; }
-.onboard li::marker { font-weight: 700; color: var(--primary); }
-.onboard a { font-weight: 600; }
 
 /* Status */
 .badges { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center; }

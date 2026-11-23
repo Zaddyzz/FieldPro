@@ -58,24 +58,12 @@ export default function Dashboard() {
   if (!data) return null;
 
   const byUser = new Map(data.members.map((m) => [m.user_id, m]));
-  const fresh = data.customers === 0 && data.open === 0 && data.completed === 0;
   const trial = subscription?.status === 'trial' && subscription.trial_ends_at;
 
   return (
     <div className="page">
       <PageHeader title={t('dash.title')}
         sub={trial ? t('dash.trialEnds', { date: formatDate(subscription!.trial_ends_at, tz, business.date_format) }) : undefined} />
-
-      {fresh && (
-        <section className="onboard">
-          <h2>{t('dash.firstSteps')}</h2>
-          <ol>
-            <li><Link to="/customers/new">{t('dash.step1')}</Link></li>
-            <li><Link to="/team">{t('dash.step2')}</Link></li>
-            <li><Link to="/jobs/new">{t('dash.step3')}</Link></li>
-          </ol>
-        </section>
-      )}
 
       <section className="board" aria-label={t('dash.openJobs')}>
         <div className="board-head">

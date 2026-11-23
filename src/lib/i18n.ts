@@ -43,7 +43,7 @@ const en = {
   'dash.inProgress': 'In progress', 'dash.completedMonth': 'Completed this month', 'dash.overdue': 'Overdue',
   'dash.today': "Today's appointments", 'dash.noToday': 'Nothing booked for today.', 'dash.activity': 'Recent activity',
   'dash.noActivity': 'Activity from your team will show here.', 'dash.trialEnds': 'Trial ends {date}',
-  'dash.firstSteps': 'Get started', 'dash.step1': 'Add your first customer', 'dash.step2': 'Invite a technician', 'dash.step3': 'Create a job',
+  
 
   'jobs.title': 'Jobs', 'jobs.new': 'New job', 'jobs.empty': 'No jobs yet', 'jobs.emptyBody': 'Create a job to schedule work for your team.',
   'jobs.noMatch': 'No jobs match these filters.', 'jobs.list': 'List', 'jobs.day': 'Day', 'jobs.week': 'Week',
