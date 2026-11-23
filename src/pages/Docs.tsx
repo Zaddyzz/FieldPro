@@ -1,6 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Mail, MessageCircle, Plus, Printer, Trash2 } from 'lucide-react';
+import { FileDown, Mail, MessageCircle, Plus, Printer, Send, Trash2 } from 'lucide-react';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
@@ -10,6 +10,9 @@ import { t, type MessageKey } from '../lib/i18n';
 import type { Customer, Doc, DocItem, DocKind, Payment } from '../lib/types';
 import { isInvoiceOverdue, todayIn } from '../lib/types';
 import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, Spinner, usePaged, useToast } from '../components/ui';
+import { downloadFile, elementToPdf, sharePdf } from '../lib/pdf';
+
+const monogram = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '•';
 
 const TABLE = (k: DocKind) => (k === 'quote' ? 'quotations' : 'invoices');
 const ITEMS = (k: DocKind) => (k === 'quote' ? 'quotation_items' : 'invoice_items');
@@ -263,7 +266,7 @@ function Totals({ totals, currency, taxLabel, rate, inclusive, paid, balance }: 
 
 export function DocView({ kind }: { kind: DocKind }) {
   const { id = '' } = useParams();
-  const { business, settings, isAdmin } = useBusiness();
+  const { business, isAdmin } = useBusiness();
   const navigate = useNavigate();
   const toast = useToast();
   const today = todayIn(business.time_zone);
@@ -279,6 +282,9 @@ export function DocView({ kind }: { kind: DocKind }) {
   }, [id, kind]);
   const [busy, setBusy] = useState(false);
   const [paying, setPaying] = useState(false);
+  const paperRef = useRef<HTMLElement>(null);
+  const [pdf, setPdf] = useState<File | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
   if (loading && !data) return <Spinner />;
   if (error) return <ErrorBox message={error} onRetry={reload} />;
   if (!data) return <ErrorBox message={t('error.forbidden')} />;
@@ -296,7 +302,39 @@ export function DocView({ kind }: { kind: DocKind }) {
   const amountText = money(kind === 'invoice' ? (d.balance_minor ?? d.total_minor) : d.total_minor, cur);
   const msg = t('doc.sentMessage', { business: business.name, kind: t(kind === 'quote' ? 'doc.quote' : 'doc.invoice').toLowerCase(), ref: d.reference, amount: amountText, link: window.location.origin });
   const markSentThen = async (open: () => void) => { open(); if (d.status === 'draft') await setStatus('sent'); };
-  const phone = d.customer?.phone?.replace('+', '');
+  const phone = d.customer?.phone?.replace(/\D/g, '');
+  const kindWord = t(kind === 'quote' ? 'doc.quote' : 'doc.invoice').toLowerCase();
+  const waMsg = t('doc.waMessage', { name: d.customer?.name ?? '', kind: kindWord, ref: d.reference, business: business.name, amount: amountText });
+  const overdueNow = kind === 'invoice' && isInvoiceOverdue(d, today);
+  const stamp = d.status === 'paid' ? { tone: 'ok', label: t('doc.status.paid') }
+    : d.status === 'cancelled' ? { tone: 'muted', label: t('doc.status.cancelled') }
+    : overdueNow ? { tone: 'bad', label: t('doc.status.overdue') }
+    : d.status === 'partially_paid' ? { tone: 'warn', label: t('doc.status.partially_paid') }
+    : d.status === 'accepted' ? { tone: 'ok', label: t('doc.status.accepted') } : null;
+
+  /** Build the PDF once, then share it (WhatsApp, Gmail, Mail…) or download it. */
+  const getPdf = async () => {
+    if (pdf) return pdf;
+    if (!paperRef.current) throw new Error('missing');
+    const file = await elementToPdf(paperRef.current, `${d.reference}.pdf`);
+    setPdf(file);
+    return file;
+  };
+  const sendPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const file = await getPdf();
+      const res = await sharePdf(file, `${d.reference} · ${business.name}`, waMsg);
+      if (res === 'needs-tap') toast.show(t('doc.pdfReady'));
+      else if (res === 'downloaded') toast.show(t('doc.pdfDownloaded'));
+      if ((res === 'shared' || res === 'downloaded') && d.status === 'draft') await setStatus('sent');
+    } catch { toast.show(t('doc.pdfFailed')); }
+    finally { setPdfBusy(false); }
+  };
+  const savePdf = async () => {
+    setPdfBusy(true);
+    try { downloadFile(await getPdf()); } catch { toast.show(t('doc.pdfFailed')); } finally { setPdfBusy(false); }
+  };
 
   return (
     <div className="page">
@@ -311,10 +349,12 @@ export function DocView({ kind }: { kind: DocKind }) {
           </>} />
         <div className="doc-actions">
           {d.status === 'draft' && <Button onClick={() => setStatus('sent')} busy={busy}>{t('doc.markSent')}</Button>}
+          {d.status !== 'cancelled' && <Button onClick={sendPdf} busy={pdfBusy}><Send size={16} />{pdf ? t('doc.sendPdfReady') : t('doc.sendPdf')}</Button>}
+          {phone && d.status !== 'cancelled' && <a className="btn btn-whatsapp" href={`https://wa.me/${phone}?text=${encodeURIComponent(waMsg)}`} target="_blank" rel="noreferrer"
+            onClick={() => markSentThen(() => undefined)}><MessageCircle size={16} />{t('doc.whatsapp')}</a>}
+          <Button variant="secondary" onClick={savePdf} disabled={pdfBusy}><FileDown size={16} />{t('doc.downloadPdf')}</Button>
           {d.customer?.email && d.status !== 'cancelled' && <a className="btn btn-secondary" href={`mailto:${d.customer.email}?subject=${encodeURIComponent(`${d.reference} · ${business.name}`)}&body=${encodeURIComponent(msg)}`}
             onClick={() => markSentThen(() => undefined)}><Mail size={16} />{t('doc.email')}</a>}
-          {settings?.whatsapp_enabled && phone && d.status !== 'cancelled' && <a className="btn btn-secondary" href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer"
-            onClick={() => markSentThen(() => undefined)}><MessageCircle size={16} />{t('doc.whatsapp')}</a>}
           {kind === 'quote' && !d.invoice_id && !['rejected', 'expired'].includes(d.status) && <Button onClick={() => run(() => supabase.rpc('convert_quote_to_invoice', { p_quote: d.id }), (iid) => navigate(`/invoices/${iid}`))} busy={busy}>{t('doc.convert')}</Button>}
           {kind === 'quote' && d.status === 'sent' && <><Button variant="ghost" onClick={() => setStatus('accepted')}>{t('doc.accept')}</Button><Button variant="ghost" onClick={() => setStatus('rejected')}>{t('doc.reject')}</Button></>}
           {kind === 'invoice' && ['sent', 'partially_paid', 'draft'].includes(d.status) && (d.balance_minor ?? 0) > 0 && <Button onClick={() => setPaying(true)}>{t('pay.record')}</Button>}
@@ -324,45 +364,68 @@ export function DocView({ kind }: { kind: DocKind }) {
         {!editable && kind === 'invoice' && d.status !== 'draft' && <p className="fine">{t('doc.locked')}</p>}
       </div>
 
-      <article className="paper">
-        <header className="paper-head">
-          <div>
-            <h2 className="paper-biz">{business.name}</h2>
-            <p className="muted">{[business.address_line1, business.city, business.region].filter(Boolean).join(', ')}</p>
-            <p className="muted">{[business.phone, business.email].filter(Boolean).join(' · ')}</p>
-            {data.extra?.tax_number && <p className="muted">{t('doc.taxNo')}: {data.extra.tax_number}</p>}
+      <article className="paper" ref={paperRef}>
+        <div className="pp-band" />
+        <header className="pp-head">
+          <div className="pp-biz">
+            <span className="pp-mono" aria-hidden>{monogram(business.name)}</span>
+            <div>
+              <h2>{business.name}</h2>
+              <p>{[business.address_line1, business.city, business.region].filter(Boolean).join(', ')}</p>
+              <p>{[business.phone, business.email].filter(Boolean).join(' · ')}</p>
+              {data.extra?.tax_number && <p>{t('doc.taxNo')}: {data.extra.tax_number}</p>}
+            </div>
           </div>
-          <div className="paper-meta">
+          <div className="pp-title">
             <h1>{t(kind === 'quote' ? 'doc.quote' : 'doc.invoice')}</h1>
-            <dl>
-              <dt>No.</dt><dd>{d.reference}</dd>
-              <dt>{t('doc.issue')}</dt><dd>{day(d.issue_date, business.date_format)}</dd>
-              {kind === 'quote' ? <><dt>{t('doc.valid')}</dt><dd>{day(d.valid_until, business.date_format)}</dd></> : <><dt>{t('doc.due')}</dt><dd>{day(d.due_date, business.date_format)}</dd></>}
-            </dl>
+            <p className="pp-ref">{d.reference}</p>
+            {stamp && <span className={`pp-stamp pp-stamp-${stamp.tone}`}>{stamp.label}</span>}
           </div>
         </header>
-        <section className="paper-to">
-          <span className="eyebrow">{t('doc.billTo')}</span>
-          <strong>{d.customer?.name}</strong>
-          <span>{[d.customer?.address_line1, d.customer?.city].filter(Boolean).join(', ')}</span>
-          <span>{[d.customer?.phone, d.customer?.email].filter(Boolean).join(' · ')}</span>
+
+        <section className="pp-cards">
+          <div className="pp-card">
+            <span className="pp-label">{t('doc.billTo')}</span>
+            <strong>{d.customer?.name}</strong>
+            <span>{[d.customer?.address_line1, d.customer?.city].filter(Boolean).join(', ')}</span>
+            <span>{[d.customer?.phone, d.customer?.email].filter(Boolean).join(' · ')}</span>
+          </div>
+          <div className="pp-card">
+            <span className="pp-label">{t('doc.issue')}</span>
+            <strong>{day(d.issue_date, business.date_format)}</strong>
+            <span className="pp-label pp-gap">{kind === 'quote' ? t('doc.valid') : t('doc.due')}</span>
+            <strong>{day(kind === 'quote' ? d.valid_until : d.due_date, business.date_format)}</strong>
+          </div>
+          <div className="pp-card pp-due">
+            <span className="pp-label">{kind === 'quote' ? t('doc.total') : t('doc.amountDue')}</span>
+            <strong className="pp-amount">{amountText}</strong>
+            {kind === 'invoice' && (d.amount_paid_minor ?? 0) > 0 && <span>{t('doc.paid')}: {money(d.amount_paid_minor, cur)}</span>}
+          </div>
         </section>
-        <table className="paper-items">
+
+        <table className="pp-items">
           <thead><tr><th>{t('doc.description')}</th><th className="num">{t('doc.qty')}</th><th className="num">{t('doc.unit')}</th><th className="num">{t('doc.amount')}</th></tr></thead>
           <tbody>{data.items.map((i) => (
-            <tr key={i.id}><td>{i.description}<small>{t(`doc.kind.${i.kind}` as MessageKey)}</small></td><td className="num">{Number(i.quantity)}</td>
-              <td className="num">{money(i.unit_price_minor, cur)}</td><td className="num">{money(i.line_total_minor ?? 0, cur)}</td></tr>
+            <tr key={i.id}><td><strong>{i.description}</strong><small>{t(`doc.kind.${i.kind}` as MessageKey)}</small></td><td className="num">{Number(i.quantity)}</td>
+              <td className="num">{money(i.unit_price_minor, cur)}</td><td className="num"><strong>{money(i.line_total_minor ?? 0, cur)}</strong></td></tr>
           ))}</tbody>
         </table>
-        <div className="paper-foot">
-          <div className="paper-notes">
-            {d.notes && <><span className="eyebrow">{t('doc.notes')}</span><p className="pre">{d.notes}</p></>}
-            {kind === 'invoice' && data.extra?.payment_instructions && <><span className="eyebrow">{t('doc.payTo')}</span><p className="pre">{data.extra.payment_instructions}</p></>}
+
+        <div className="pp-foot">
+          <div className="pp-notes">
+            {kind === 'invoice' && data.extra?.payment_instructions && <div className="pp-pay"><span className="pp-label">{t('doc.payTo')}</span><p className="pre">{data.extra.payment_instructions}</p></div>}
+            {d.notes && <div><span className="pp-label">{t('doc.notes')}</span><p className="pre">{d.notes}</p></div>}
           </div>
-          <Totals totals={{ subtotal: d.subtotal_minor, discount: d.discount_minor, tax: d.tax_minor, total: d.total_minor }} currency={cur}
-            taxLabel={business.tax_label} rate={Number(d.tax_rate)} inclusive={d.tax_inclusive}
-            paid={kind === 'invoice' ? d.amount_paid_minor : undefined} balance={kind === 'invoice' ? d.balance_minor : undefined} />
+          <div className="pp-totals">
+            <Totals totals={{ subtotal: d.subtotal_minor, discount: d.discount_minor, tax: d.tax_minor, total: d.total_minor }} currency={cur}
+              taxLabel={business.tax_label} rate={Number(d.tax_rate)} inclusive={d.tax_inclusive}
+              paid={kind === 'invoice' ? d.amount_paid_minor : undefined} balance={kind === 'invoice' ? d.balance_minor : undefined} />
+          </div>
         </div>
+        <footer className="pp-thanks">
+          <strong>{t('doc.thanks')}</strong>
+          <span>{t('doc.madeWith')}</span>
+        </footer>
       </article>
 
       {kind === 'invoice' && data.payments.length > 0 && (
