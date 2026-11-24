@@ -215,7 +215,7 @@ const en = {
   'doc.emailTitle': 'Email this document', 'doc.emailTo': 'To {email}. The PDF is attached automatically.',
   'doc.emailMessageLabel': 'Message', 'doc.emailAttachHint': 'Sent from your business name. Replies go to your business email.',
   'doc.emailSend': 'Send email', 'doc.emailSent': 'Emailed to {email} with the PDF attached.',
-  'doc.emailFallback': 'Email sending is not set up yet, so your phone\'s share sheet opened with the PDF. Choose Gmail; {email} is copied, paste it as the recipient.',
+  'doc.emailFallbackNote': 'Automatic email is not switched on yet. Your PDF is ready: tap Share PDF, choose Gmail or Mail, and paste {email} as the recipient (it is copied).', 'doc.emailShare': 'Share PDF',
   'doc.emailMessage': 'Dear {name},\n\nPlease find attached invoice {ref} for {amount}, due on {due}.\n\nPayment details are on the invoice. Thank you for your business.\n\n{business}',
   'doc.emailMessageQuote': 'Dear {name},\n\nPlease find attached quotation {ref} for {amount}, valid until {due}.\n\nReply to this email if you would like to go ahead or have any questions.\n\n{business}',
   'error.generic': 'Something went wrong.', 'error.notConfigured': 'COVARO is not connected to its database yet.',

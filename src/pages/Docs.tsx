@@ -10,7 +10,7 @@ import { computeTotals, digits, money, minorToInput, toMinor } from '../lib/mone
 import { t, type MessageKey } from '../lib/i18n';
 import type { Customer, Doc, DocItem, DocKind, Payment } from '../lib/types';
 import { isInvoiceOverdue, todayIn } from '../lib/types';
-import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, Spinner, usePaged, useToast } from '../components/ui';
+import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, Spinner, usePaged, useToast, Notice } from '../components/ui';
 import { blobToBase64, downloadFile, elementToPdf, sharePdf } from '../lib/pdf';
 
 const monogram = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '•';
@@ -287,6 +287,7 @@ export function DocView({ kind }: { kind: DocKind }) {
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailing, setEmailing] = useState(false);
+  const [emailFallback, setEmailFallback] = useState(false);
   if (loading && !data) return <Spinner />;
   if (error) return <ErrorBox message={error} onRetry={reload} />;
   if (!data) return <ErrorBox message={t('error.forbidden')} />;
@@ -336,8 +337,17 @@ export function DocView({ kind }: { kind: DocKind }) {
     name: d.customer?.name ?? '', ref: d.reference, business: business.name, amount: amountText,
     due: day(kind === 'quote' ? d.valid_until : d.due_date, business.date_format),
   });
-  /** Email the PDF straight to the customer; if email sending is not set up yet, open the share sheet instead. */
+  /** Share sheet with the ready PDF and the message (used while email sending is not set up). */
+  const shareForEmail = async (message: string) => {
+    if (!pdf) return;
+    try { await navigator.clipboard?.writeText(d.customer?.email ?? ''); } catch { /* clipboard blocked */ }
+    const res = await sharePdf(pdf, `${d.reference} · ${business.name}`, message);
+    if (res === 'downloaded') toast.show(t('doc.pdfDownloaded'));
+    if (res === 'shared' || res === 'downloaded') { setEmailing(false); if (d.status === 'draft') await setStatus('sent'); }
+  };
+  /** Email the PDF straight to the customer; if email sending is not set up yet, fall back to the share sheet. */
   const sendEmail = async (message: string) => {
+    if (emailFallback && pdf) return shareForEmail(message);
     setPdfBusy(true);
     try {
       const file = await getPdf();
@@ -347,11 +357,9 @@ export function DocView({ kind }: { kind: DocKind }) {
         let reason = '';
         try { reason = (await (error as { context?: Response }).context?.json())?.error ?? ''; } catch { /* not JSON */ }
         if (reason === 'not_configured') {
+          // Safari only opens the share sheet straight after a tap, so ask for one more tap with the PDF ready.
+          setEmailFallback(true);
           try { await navigator.clipboard?.writeText(d.customer?.email ?? ''); } catch { /* clipboard blocked */ }
-          const res = await sharePdf(file, `${d.reference} · ${business.name}`, message);
-          toast.show(res === 'needs-tap' ? t('doc.pdfReady') : t('doc.emailFallback', { email: d.customer?.email ?? '' }));
-          if ((res === 'shared' || res === 'downloaded') && d.status === 'draft') await setStatus('sent');
-          setEmailing(false);
           return;
         }
         throw new Error(reason || errorMessage(error));
@@ -392,7 +400,7 @@ export function DocView({ kind }: { kind: DocKind }) {
           {kind === 'invoice' && d.status !== 'cancelled' && (d.amount_paid_minor ?? 0) === 0 && isAdmin && <Button variant="ghost" onClick={() => window.confirm(t('doc.cancelConfirm')) && setStatus('cancelled')}>{t('doc.cancelInvoice')}</Button>}
         </div>
         {emailing && d.customer?.email && (
-          <EmailForm to={d.customer.email} initial={emailMsg} busy={pdfBusy}
+          <EmailForm to={d.customer.email} initial={emailMsg} busy={pdfBusy} fallback={emailFallback && !!pdf}
             onCancel={() => setEmailing(false)} onSend={sendEmail} />
         )}
         {paying && <PaymentForm invoice={d} methods={data.extra?.payment_methods ?? []} onDone={() => { setPaying(false); toast.show(t('pay.recorded')); reload(); }} onCancel={() => setPaying(false)} />}
@@ -555,7 +563,7 @@ export function PaymentList() {
   );
 }
 
-function EmailForm({ to, initial, busy, onSend, onCancel }: { to: string; initial: string; busy: boolean; onSend: (message: string) => void; onCancel: () => void }) {
+function EmailForm({ to, initial, busy, fallback, onSend, onCancel }: { to: string; initial: string; busy: boolean; fallback: boolean; onSend: (message: string) => void; onCancel: () => void }) {
   const [message, setMessage] = useState(initial);
   return (
     <form className="card stack email-form" onSubmit={(e) => { e.preventDefault(); onSend(message.trim()); }}>
@@ -564,9 +572,10 @@ function EmailForm({ to, initial, busy, onSend, onCancel }: { to: string; initia
       <Field label={t('doc.emailMessageLabel')} hint={t('doc.emailAttachHint')}>
         <textarea rows={7} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={2000} required />
       </Field>
+      {fallback && <Notice>{t('doc.emailFallbackNote', { email: to })}</Notice>}
       <div className="form-actions">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>{t('common.cancel')}</Button>
-        <Button type="submit" busy={busy}><Mail size={16} />{t('doc.emailSend')}</Button>
+        <Button type="submit" busy={busy}>{fallback ? <><Send size={16} />{t('doc.emailShare')}</> : <><Mail size={16} />{t('doc.emailSend')}</>}</Button>
       </div>
     </form>
   );
