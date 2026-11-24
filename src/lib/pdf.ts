@@ -68,3 +68,13 @@ export function downloadFile(file: File) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+
+/** Base64 (no data: prefix) for sending a file in a JSON body. */
+export function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] ?? '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}

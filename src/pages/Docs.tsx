@@ -11,7 +11,7 @@ import { t, type MessageKey } from '../lib/i18n';
 import type { Customer, Doc, DocItem, DocKind, Payment } from '../lib/types';
 import { isInvoiceOverdue, todayIn } from '../lib/types';
 import { Button, EmptyState, ErrorBox, Field, LinkButton, PageHeader, Pager, Spinner, usePaged, useToast } from '../components/ui';
-import { downloadFile, elementToPdf, sharePdf } from '../lib/pdf';
+import { blobToBase64, downloadFile, elementToPdf, sharePdf } from '../lib/pdf';
 
 const monogram = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '•';
 
@@ -286,6 +286,7 @@ export function DocView({ kind }: { kind: DocKind }) {
   const paperRef = useRef<HTMLElement>(null);
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [emailing, setEmailing] = useState(false);
   if (loading && !data) return <Spinner />;
   if (error) return <ErrorBox message={error} onRetry={reload} />;
   if (!data) return <ErrorBox message={t('error.forbidden')} />;
@@ -301,7 +302,6 @@ export function DocView({ kind }: { kind: DocKind }) {
   const setStatus = (status: string) => run(() => supabase.from(TABLE(kind)).update({ status }).eq('id', d.id));
   const editable = kind === 'quote' ? !['accepted', 'rejected'].includes(d.status) && !d.invoice_id : d.status !== 'cancelled' && (d.amount_paid_minor ?? 0) === 0 && data.payments.length === 0;
   const amountText = money(kind === 'invoice' ? (d.balance_minor ?? d.total_minor) : d.total_minor, cur);
-  const msg = t('doc.sentMessage', { business: business.name, kind: t(kind === 'quote' ? 'doc.quote' : 'doc.invoice').toLowerCase(), ref: d.reference, amount: amountText, link: window.location.origin });
   const markSentThen = async (open: () => void) => { open(); if (d.status === 'draft') await setStatus('sent'); };
   const phone = d.customer?.phone?.replace(/\D/g, '');
   const kindWord = t(kind === 'quote' ? 'doc.quote' : 'doc.invoice').toLowerCase();
@@ -332,6 +332,37 @@ export function DocView({ kind }: { kind: DocKind }) {
     } catch { toast.show(t('doc.pdfFailed')); }
     finally { setPdfBusy(false); }
   };
+  const emailMsg = t(kind === 'quote' ? 'doc.emailMessageQuote' : 'doc.emailMessage', {
+    name: d.customer?.name ?? '', ref: d.reference, business: business.name, amount: amountText,
+    due: day(kind === 'quote' ? d.valid_until : d.due_date, business.date_format),
+  });
+  /** Email the PDF straight to the customer; if email sending is not set up yet, open the share sheet instead. */
+  const sendEmail = async (message: string) => {
+    setPdfBusy(true);
+    try {
+      const file = await getPdf();
+      const b64 = await blobToBase64(file);
+      const { error } = await supabase.functions.invoke('send-document', { body: { kind, id: d.id, message, pdf_base64: b64 } });
+      if (error) {
+        let reason = '';
+        try { reason = (await (error as { context?: Response }).context?.json())?.error ?? ''; } catch { /* not JSON */ }
+        if (reason === 'not_configured') {
+          try { await navigator.clipboard?.writeText(d.customer?.email ?? ''); } catch { /* clipboard blocked */ }
+          const res = await sharePdf(file, `${d.reference} · ${business.name}`, message);
+          toast.show(res === 'needs-tap' ? t('doc.pdfReady') : t('doc.emailFallback', { email: d.customer?.email ?? '' }));
+          if ((res === 'shared' || res === 'downloaded') && d.status === 'draft') await setStatus('sent');
+          setEmailing(false);
+          return;
+        }
+        throw new Error(reason || errorMessage(error));
+      }
+      setEmailing(false);
+      toast.show(t('doc.emailSent', { email: d.customer?.email ?? '' }));
+      if (d.status === 'draft') await setStatus('sent');
+    } catch (e) {
+      toast.show(e instanceof Error && e.message !== 'missing' ? e.message : t('doc.pdfFailed'));
+    } finally { setPdfBusy(false); }
+  };
   const savePdf = async () => {
     setPdfBusy(true);
     try { downloadFile(await getPdf()); } catch { toast.show(t('doc.pdfFailed')); } finally { setPdfBusy(false); }
@@ -354,13 +385,16 @@ export function DocView({ kind }: { kind: DocKind }) {
           {phone && d.status !== 'cancelled' && <a className="btn btn-whatsapp" href={`https://wa.me/${phone}?text=${encodeURIComponent(waMsg)}`} target="_blank" rel="noreferrer"
             onClick={() => markSentThen(() => undefined)}><MessageCircle size={16} />{t('doc.whatsapp')}</a>}
           <Button variant="secondary" onClick={savePdf} disabled={pdfBusy}><FileDown size={16} />{t('doc.downloadPdf')}</Button>
-          {d.customer?.email && d.status !== 'cancelled' && <a className="btn btn-secondary" href={`mailto:${d.customer.email}?subject=${encodeURIComponent(`${d.reference} · ${business.name}`)}&body=${encodeURIComponent(msg)}`}
-            onClick={() => markSentThen(() => undefined)}><Mail size={16} />{t('doc.email')}</a>}
+          {d.customer?.email && d.status !== 'cancelled' && <Button variant="secondary" onClick={() => setEmailing(true)} disabled={pdfBusy}><Mail size={16} />{t('doc.email')}</Button>}
           {kind === 'quote' && !d.invoice_id && !['rejected', 'expired'].includes(d.status) && <Button onClick={() => run(() => supabase.rpc('convert_quote_to_invoice', { p_quote: d.id }), (iid) => navigate(`/invoices/${iid}`))} busy={busy}>{t('doc.convert')}</Button>}
           {kind === 'quote' && d.status === 'sent' && <><Button variant="ghost" onClick={() => setStatus('accepted')}>{t('doc.accept')}</Button><Button variant="ghost" onClick={() => setStatus('rejected')}>{t('doc.reject')}</Button></>}
           {kind === 'invoice' && ['sent', 'partially_paid', 'draft'].includes(d.status) && (d.balance_minor ?? 0) > 0 && <Button onClick={() => setPaying(true)}>{t('pay.record')}</Button>}
           {kind === 'invoice' && d.status !== 'cancelled' && (d.amount_paid_minor ?? 0) === 0 && isAdmin && <Button variant="ghost" onClick={() => window.confirm(t('doc.cancelConfirm')) && setStatus('cancelled')}>{t('doc.cancelInvoice')}</Button>}
         </div>
+        {emailing && d.customer?.email && (
+          <EmailForm to={d.customer.email} initial={emailMsg} busy={pdfBusy}
+            onCancel={() => setEmailing(false)} onSend={sendEmail} />
+        )}
         {paying && <PaymentForm invoice={d} methods={data.extra?.payment_methods ?? []} onDone={() => { setPaying(false); toast.show(t('pay.recorded')); reload(); }} onCancel={() => setPaying(false)} />}
         {!editable && kind === 'invoice' && d.status !== 'draft' && <p className="fine">{t('doc.locked')}</p>}
       </div>
@@ -518,5 +552,22 @@ export function PaymentList() {
           </div>
         )}
     </div>
+  );
+}
+
+function EmailForm({ to, initial, busy, onSend, onCancel }: { to: string; initial: string; busy: boolean; onSend: (message: string) => void; onCancel: () => void }) {
+  const [message, setMessage] = useState(initial);
+  return (
+    <form className="card stack email-form" onSubmit={(e) => { e.preventDefault(); onSend(message.trim()); }}>
+      <h2 className="card-title">{t('doc.emailTitle')}</h2>
+      <p className="muted">{t('doc.emailTo', { email: to })}</p>
+      <Field label={t('doc.emailMessageLabel')} hint={t('doc.emailAttachHint')}>
+        <textarea rows={7} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={2000} required />
+      </Field>
+      <div className="form-actions">
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>{t('common.cancel')}</Button>
+        <Button type="submit" busy={busy}><Mail size={16} />{t('doc.emailSend')}</Button>
+      </div>
+    </form>
   );
 }
