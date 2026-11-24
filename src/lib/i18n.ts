@@ -207,6 +207,11 @@ const en = {
   'admin.prices': 'Monthly prices', 'admin.pricesHint': 'One per line, e.g. NGN 15000 or USD 19', 'admin.savePlan': 'Save', 'admin.contact': 'Upgrade contact',
   'admin.supportEmail': 'Support email', 'admin.supportWhatsapp': 'Support WhatsApp number', 'admin.upgradeNote': 'Note shown to businesses',
   'admin.total': '{n} businesses', 'admin.trialing': '{n} on trial', 'admin.paying': '{n} active', 'admin.blocked': '{n} blocked',
+  'logo.title': 'Logo', 'logo.sub': 'Shown at the top of your quotes and invoices, and in the customer portal.', 'logo.none': 'No logo yet',
+  'logo.upload': 'Upload logo', 'logo.replace': 'Replace logo', 'logo.uploading': 'Uploading…', 'logo.remove': 'Remove',
+  'logo.removeConfirm': 'Remove your logo from all quotes and invoices?', 'logo.saved': 'Logo updated', 'logo.removed': 'Logo removed',
+  'logo.hint': 'PNG with a transparent background looks best. JPG and WebP also work. It is resized to 600 px.',
+  'logo.watermark': 'Also show the logo as a faint watermark behind quotes and invoices',
   'error.generic': 'Something went wrong.', 'error.notConfigured': 'COVARO is not connected to its database yet.',
   'error.forbidden': 'You do not have access to this page.',
 } as const;

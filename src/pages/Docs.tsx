@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FileDown, Mail, MessageCircle, Plus, Printer, Send, Trash2 } from 'lucide-react';
+import { PaperLogo, PaperWatermark } from '../components/PaperBrand';
 import { useBusiness } from '../lib/session';
 import { supabase, errorMessage } from '../lib/supabase';
 import { must, useAsync } from '../lib/data';
@@ -365,10 +366,12 @@ export function DocView({ kind }: { kind: DocKind }) {
       </div>
 
       <article className="paper" ref={paperRef}>
+        <PaperWatermark path={business.logo_path} on={business.logo_watermark} />
         <div className="pp-band" />
         <header className="pp-head">
           <div className="pp-biz">
-            <span className="pp-mono" aria-hidden>{monogram(business.name)}</span>
+            {business.logo_path ? <PaperLogo path={business.logo_path} name={business.name} />
+              : <span className="pp-mono" aria-hidden>{monogram(business.name)}</span>}
             <div>
               <h2>{business.name}</h2>
               <p>{[business.address_line1, business.city, business.region].filter(Boolean).join(', ')}</p>

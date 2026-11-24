@@ -7,6 +7,7 @@ import { t } from '../lib/i18n';
 import { useTheme, type ThemeChoice } from '../lib/theme';
 import { TimeZoneSelect } from '../components/TimeZoneSelect';
 import { PlanCard } from '../components/Plan';
+import { LOGO_BUCKET, logoUrl, prepareLogo } from '../lib/logo';
 import { Button, ErrorBox, Field, LinkButton, Notice, PageHeader, PhoneInput, useToast } from '../components/ui';
 
 export default function Settings() {
@@ -18,12 +19,81 @@ export default function Settings() {
       {isAdmin && <PlanCard />}
       {isAdmin ? <BusinessSettings key={business.id + (settings?.job_prefix ?? '')} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
         : <Notice>{t('settings.ownerOnly')}</Notice>}
+      {isAdmin && <LogoSettings onSaved={async (msg) => { await refresh(); toast.show(msg); }} />}
       <ProfileSettings key={profile?.id} country={business.country} onSaved={async () => { await refresh(); toast.show(t('settings.saved')); }} />
       {isAdmin && <InvoiceSettings />}
       {role === 'technician' && <TechSettings />}
       <Appearance />
       {toast.node}
     </div>
+  );
+}
+
+function LogoSettings({ onSaved }: { onSaved: (msg: string) => void }) {
+  const { business } = useBusiness();
+  const [busy, setBusy] = useState<'upload' | 'remove' | 'mark' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const src = logoUrl(business.logo_path);
+
+  const call = (path: string | null, watermark: boolean | null) =>
+    supabase.rpc('set_business_logo', { p_business: business.id, p_path: path, p_watermark: watermark });
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy('upload'); setError(null);
+    try {
+      const blob = await prepareLogo(file);
+      const path = `${business.id}/logo-${Date.now()}.png`;
+      const up = await supabase.storage.from(LOGO_BUCKET).upload(path, blob, { contentType: 'image/png', cacheControl: '31536000', upsert: false });
+      if (up.error) throw up.error;
+      const { error } = await call(path, null);
+      if (error) { await supabase.storage.from(LOGO_BUCKET).remove([path]); throw error; }
+      if (business.logo_path) await supabase.storage.from(LOGO_BUCKET).remove([business.logo_path]);
+      onSaved(t('logo.saved'));
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally { setBusy(null); }
+  };
+
+  const remove = async () => {
+    if (!business.logo_path || !window.confirm(t('logo.removeConfirm'))) return;
+    setBusy('remove'); setError(null);
+    const { error } = await call('', null);
+    if (error) { setBusy(null); return setError(errorMessage(error)); }
+    await supabase.storage.from(LOGO_BUCKET).remove([business.logo_path]);
+    setBusy(null); onSaved(t('logo.removed'));
+  };
+
+  const toggleMark = async (on: boolean) => {
+    setBusy('mark'); setError(null);
+    const { error } = await call(null, on);
+    setBusy(null);
+    if (error) return setError(errorMessage(error));
+    onSaved(t('settings.saved'));
+  };
+
+  return (
+    <section className="card stack">
+      <h2 className="card-title">{t('logo.title')}</h2>
+      <p className="muted">{t('logo.sub')}</p>
+      {error && <ErrorBox message={error} />}
+      <div className="logo-row">
+        <div className="logo-preview">{src ? <img src={src} alt={`${business.name} logo`} /> : <span>{t('logo.none')}</span>}</div>
+        <div className="logo-actions">
+          <label className={`btn btn-secondary ${busy ? 'is-disabled' : ''}`}>
+            <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={!!busy}
+              onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+            {busy === 'upload' ? t('logo.uploading') : src ? t('logo.replace') : t('logo.upload')}
+          </label>
+          {src && <Button variant="ghost" onClick={remove} busy={busy === 'remove'} disabled={!!busy}>{t('logo.remove')}</Button>}
+        </div>
+      </div>
+      <p className="fine">{t('logo.hint')}</p>
+      <label className="check">
+        <input type="checkbox" checked={business.logo_watermark} disabled={!src || !!busy} onChange={(e) => toggleMark(e.target.checked)} />
+        <span>{t('logo.watermark')}</span>
+      </label>
+    </section>
   );
 }
 

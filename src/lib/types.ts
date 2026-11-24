@@ -9,6 +9,7 @@ export interface Business {
   id: string; name: string; industry: string; country: string; currency: string;
   time_zone: string; date_format: DateFormat; tax_label: string; phone: string | null; email: string | null;
   address_line1: string | null; city: string | null; region: string | null; postal_code: string | null; status: string;
+  logo_path: string | null; logo_watermark: boolean;
 }
 
 export interface Membership { id: string; business_id: string; role: Role; status: string; business: Business }

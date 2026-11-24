@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Phone, Printer } from 'lucide-react';
+import { PaperLogo, PaperWatermark } from '../../components/PaperBrand';
 import { useBusiness } from '../../lib/session';
 import { supabase, errorMessage } from '../../lib/supabase';
 import { useAsync } from '../../lib/data';
@@ -183,8 +184,9 @@ export function PortalDocument({ kind }: { kind: 'quote' | 'invoice' }) {
         {kind === 'invoice' && isInvoiceOverdue({ status: d.status, due_date: d.due_date ?? null, balance_minor: d.balance_minor ?? 0 }, today) && <Notice tone="warn">{t('doc.status.overdue')}</Notice>}
       </div>
       <article className="paper">
+        <PaperWatermark path={business.logo_path} on={business.logo_watermark} />
         <header className="paper-head">
-          <div><h2 className="paper-biz">{b.name}</h2><p className="muted">{[b.phone, b.email].filter(Boolean).join(' · ')}</p></div>
+          <div><PaperLogo path={business.logo_path} name={b.name} /><h2 className="paper-biz">{b.name}</h2><p className="muted">{[b.phone, b.email].filter(Boolean).join(' · ')}</p></div>
           <div className="paper-meta"><h1>{t(kind === 'quote' ? 'doc.quote' : 'doc.invoice')}</h1>
             <dl><dt>No.</dt><dd>{d.reference}</dd><dt>{t('doc.issue')}</dt><dd>{day(d.issue_date, b.date_format)}</dd>
               {kind === 'quote' ? <><dt>{t('doc.valid')}</dt><dd>{day(d.valid_until ?? null, b.date_format)}</dd></> : <><dt>{t('doc.due')}</dt><dd>{day(d.due_date ?? null, b.date_format)}</dd></>}</dl>

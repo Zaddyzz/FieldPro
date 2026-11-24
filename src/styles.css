@@ -535,7 +535,11 @@ a.metric:hover .metric-label { text-decoration: underline; }
 .totals .total-row { font-family: var(--font-brand); font-weight: 800; font-size: 18px; color: var(--text); padding-top: 8px; border-top: 1px solid var(--line-soft); }
 
 /* printable document */
-.paper { background: #fff; color: #151216; border: 1px solid var(--line); border-radius: var(--r); padding: 40px; margin-bottom: 20px; box-shadow: var(--shadow); }
+.paper { position: relative; isolation: isolate; overflow: hidden; background: #fff; color: #151216; border: 1px solid var(--line); border-radius: var(--r); padding: 40px; margin-bottom: 20px; box-shadow: var(--shadow); }
+.paper > :not(.paper-watermark) { position: relative; z-index: 1; }
+.paper-watermark { position: absolute; z-index: 0; left: 50%; top: 52%; width: min(60%, 420px); max-height: 60%; object-fit: contain; transform: translate(-50%, -50%);
+  opacity: .06; pointer-events: none; user-select: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.paper-logo { display: block; max-width: 180px; max-height: 64px; width: auto; height: auto; object-fit: contain; margin-bottom: 12px; }
 .paper .muted { color: #6f656a; margin: 2px 0; font-size: 13.5px; }
 .paper .eyebrow { color: #6f656a; }
 .paper-head { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-bottom: 24px; border-bottom: 2px solid #151216; }
@@ -904,3 +908,29 @@ input[type='datetime-local'], input[type='date'], input[type='time'] { min-width
 @media print { .paper { border-radius: 0; } }
 .paper-capture { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; }
 .pp-ref { font-variant-numeric: normal; letter-spacing: .02em; }
+
+.logo-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.logo-preview { width: 160px; height: 96px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: var(--r); background: #fff; padding: 10px; }
+.logo-preview { box-sizing: border-box; overflow: hidden; }
+.logo-preview img { display: block; width: auto; height: auto; max-width: 138px; max-height: 74px; min-width: 0; min-height: 0; object-fit: contain; }
+.logo-preview span { color: #82777b; font-size: 13px; }
+.logo-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.logo-actions label.btn { cursor: pointer; }
+.logo-actions .is-disabled { opacity: .6; pointer-events: none; }
+
+/* Line items on a phone: description on its own line, then "qty × unit price" and the amount */
+@media (max-width: 600px) {
+  .paper-items thead { display: none; }
+  .paper-items tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 6px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid #f1ebe8; }
+  .paper-items td { border: 0; padding: 0; }
+  .paper-items td:first-child { grid-column: 1 / -1; margin-bottom: 4px; }
+  .paper-items td:nth-child(2) { text-align: left; color: #6f656a; }
+  .paper-items td:nth-child(2)::after { content: ' ×'; }
+  .paper-items td:nth-child(3) { text-align: left; color: #6f656a; }
+  .paper-items td:nth-child(4) { font-weight: 600; }
+}
+
+/* Business logo inside the redesigned document header, and the watermark above the paper background */
+.pp-biz .paper-logo { flex: none; max-width: 120px; max-height: 56px; margin: 0; }
+.paper .paper-watermark { z-index: 0; }
+.paper > :not(.paper-watermark) { position: relative; z-index: 1; }
